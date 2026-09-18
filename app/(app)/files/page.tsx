@@ -3,7 +3,7 @@ import FilesClient from "./FilesClient";
 import type { DocumentRow, Student } from "@/lib/types";
 
 export default async function FilesPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const [{ data: docs }, { data: students }] = await Promise.all([
     supabase

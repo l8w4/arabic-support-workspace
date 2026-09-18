@@ -3,7 +3,7 @@ import HomeClient from "./HomeClient";
 import type { DocumentRow } from "@/lib/types";
 
 export default async function HomePage() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const [{ count: studentCount }, { count: fileCount }, { data: recentDocs }] = await Promise.all([
     supabase.from("students").select("*", { count: "exact", head: true }).eq("status", "active"),

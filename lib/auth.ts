@@ -15,7 +15,7 @@ export type Profile = {
 // reaching here without a profile row means the account exists in
 // Supabase Auth but nobody has added its profiles row yet.
 export async function requireProfile(): Promise<Profile> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

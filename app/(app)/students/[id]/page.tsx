@@ -3,15 +3,16 @@ import { createClient } from "@/lib/supabase/server";
 import StudentProfileClient from "./StudentProfileClient";
 import type { Student, DocumentRow } from "@/lib/types";
 
-export default async function StudentProfilePage({ params }: { params: { id: string } }) {
-  const supabase = createClient();
+export default async function StudentProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await createClient();
 
   const [{ data: student }, { data: docs }] = await Promise.all([
-    supabase.from("students").select("*").eq("id", params.id).single(),
+    supabase.from("students").select("*").eq("id", id).single(),
     supabase
       .from("documents")
       .select("id, title, doc_type, file_name, file_path, uploaded_at, profiles(full_name_ar)")
-      .eq("student_id", params.id)
+      .eq("student_id", id)
       .order("uploaded_at", { ascending: false }),
   ]);
 

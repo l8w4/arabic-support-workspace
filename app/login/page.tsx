@@ -72,10 +72,11 @@ function LoginForm({ hasError }: { hasError: boolean }) {
   );
 }
 
-export default function LoginPage({ searchParams }: { searchParams: { error?: string } }) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  const params = await searchParams;
   return (
     <LangProvider>
-      <LoginForm hasError={!!searchParams.error} />
+      <LoginForm hasError={!!params.error} />
     </LangProvider>
   );
 }
