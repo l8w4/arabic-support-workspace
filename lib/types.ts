@@ -35,6 +35,17 @@ export type Prep = {
   classes?: { name_ar: string } | null;
 };
 
+export type AttendanceStatus = "present" | "absent" | "excused" | "truant" | "late";
+
+export type AttendanceRow = {
+  id: string;
+  class_id: string;
+  student_id: string;
+  attend_date: string;
+  status: AttendanceStatus;
+  note: string | null;
+};
+
 export type ProgressRating = "great" | "noticeable" | "slight" | "none";
 export type PlanStatus = "draft" | "active" | "under_review" | "completed";
 

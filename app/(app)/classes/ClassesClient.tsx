@@ -1,14 +1,28 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, X, Layers } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Plus, X, Layers, ChevronDown, ChevronUp } from "lucide-react";
 import { useLang } from "@/lib/i18n/context";
-import type { Class } from "@/lib/types";
-import { createClass, setClassActive } from "./actions";
+import type { Class, Student } from "@/lib/types";
+import { createClass, setClassActive, setClassMembership } from "./actions";
 
-export default function ClassesClient({ classes }: { classes: Class[] }) {
+export default function ClassesClient({
+  classes,
+  students,
+  memberships,
+}: {
+  classes: Class[];
+  students: Pick<Student, "id" | "name_ar">[];
+  memberships: { class_id: string; student_id: string }[];
+}) {
   const { t } = useLang();
   const [showForm, setShowForm] = useState(false);
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  const memberSet = useMemo(
+    () => new Set(memberships.map((m) => `${m.class_id}:${m.student_id}`)),
+    [memberships]
+  );
 
   const handleCreate = (formData: FormData) => {
     createClass(formData);
@@ -66,23 +80,62 @@ export default function ClassesClient({ classes }: { classes: Class[] }) {
         <div className="text-sm text-slate-500">{t("noClassesYet")}</div>
       ) : (
         <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 max-w-md">
-          {classes.map((c) => (
-            <div key={c.id} className="p-4 flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2.5">
-                <Layers size={16} className="text-slate-400" />
-                <div>
-                  <div className={c.is_active ? "text-slate-800" : "text-slate-400 line-through"}>{c.name_ar}</div>
-                  <div className="text-xs text-slate-400">{c.academic_year}</div>
+          {classes.map((c) => {
+            const isExpanded = expanded === c.id;
+            return (
+              <div key={c.id}>
+                <div className="p-4 flex items-center justify-between text-sm">
+                  <button
+                    onClick={() => setExpanded(isExpanded ? null : c.id)}
+                    className="flex items-center gap-2.5 text-start flex-1"
+                  >
+                    <Layers size={16} className="text-slate-400 shrink-0" />
+                    <div>
+                      <div className={c.is_active ? "text-slate-800" : "text-slate-400 line-through"}>{c.name_ar}</div>
+                      <div className="text-xs text-slate-400">{c.academic_year}</div>
+                    </div>
+                  </button>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <button
+                      onClick={() => setClassActive(c.id, !c.is_active)}
+                      className="text-xs text-slate-500 hover:text-slate-700 border border-slate-200 rounded-full px-2.5 py-1"
+                    >
+                      {c.is_active ? t("archive") : t("activate")}
+                    </button>
+                    <button onClick={() => setExpanded(isExpanded ? null : c.id)} className="text-slate-400">
+                      {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+                  </div>
                 </div>
+
+                {isExpanded && (
+                  <div className="bg-slate-50 px-4 pb-4">
+                    <div className="text-xs text-slate-400 mb-2 pt-1">{t("manageRoster")}</div>
+                    {students.length === 0 ? (
+                      <div className="text-sm text-slate-500">{t("noStudentsActive")}</div>
+                    ) : (
+                      <div className="flex flex-col gap-1.5 max-h-64 overflow-y-auto">
+                        {students.map((s) => {
+                          const isMember = memberSet.has(`${c.id}:${s.id}`);
+                          return (
+                            <label key={s.id} className="flex items-center gap-2 text-sm text-slate-700">
+                              <input
+                                type="checkbox"
+                                checked={isMember}
+                                onChange={(e) => setClassMembership(c.id, s.id, e.target.checked)}
+                                className="rounded border-slate-300"
+                              />
+                              {s.name_ar}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-              <button
-                onClick={() => setClassActive(c.id, !c.is_active)}
-                className="text-xs text-slate-500 hover:text-slate-700 border border-slate-200 rounded-full px-2.5 py-1"
-              >
-                {c.is_active ? t("archive") : t("activate")}
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
