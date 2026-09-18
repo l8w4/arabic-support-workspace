@@ -14,6 +14,27 @@ export type Student = {
   created_at: string;
 };
 
+export type Class = {
+  id: string;
+  name_ar: string;
+  academic_year: string;
+  is_active: boolean;
+  created_at: string;
+};
+
+export type Prep = {
+  id: string;
+  class_id: string;
+  week_start: string;
+  week_end: string;
+  unit: string | null;
+  lesson_title: string | null;
+  document_path: string | null;
+  created_at: string;
+  // joined for display
+  classes?: { name_ar: string } | null;
+};
+
 export type ProgressRating = "great" | "noticeable" | "slight" | "none";
 export type PlanStatus = "draft" | "active" | "under_review" | "completed";
 
