@@ -127,6 +127,13 @@ export const STRINGS = {
     status_excused: "مستأذن",
     status_truant: "هارب",
     status_late: "متأخر",
+    markAllPresent: "تحديد الكل حاضر",
+    saving: "جارٍ الحفظ...",
+    savedConfirm: "تم الحفظ",
+    saveError: "حدث خطأ أثناء الحفظ",
+    downloadAttendance: "تنزيل سجل الحضور",
+    optionalNote: "ملاحظة (اختياري)",
+    markingFor: "تسجيل الحضور لـ",
   },
   en: {
     appName: "Support Centre Workspace",
@@ -256,6 +263,13 @@ export const STRINGS = {
     status_excused: "Excused",
     status_truant: "Truant",
     status_late: "Late",
+    markAllPresent: "Mark all present",
+    saving: "Saving...",
+    savedConfirm: "Saved",
+    saveError: "Something went wrong while saving",
+    downloadAttendance: "Download attendance record",
+    optionalNote: "Note (optional)",
+    markingFor: "Marking attendance for",
   },
 } as const;
 

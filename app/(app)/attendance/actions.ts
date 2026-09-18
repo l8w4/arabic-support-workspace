@@ -35,9 +35,11 @@ export async function saveAttendance(classId: string, attendDate: string, formDa
     });
   }
 
-  if (rows.length === 0) return;
+  if (rows.length === 0) return { success: false };
 
-  await supabase.from("attendance").upsert(rows, { onConflict: "class_id,student_id,attend_date" });
+  const { error } = await supabase.from("attendance").upsert(rows, { onConflict: "class_id,student_id,attend_date" });
 
   revalidatePath("/attendance");
+
+  return { success: !error };
 }
