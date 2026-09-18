@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, ArrowLeft, Pencil, FileText } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, ArrowLeft, Pencil, FileText, User, Upload } from "lucide-react";
 import { useLang } from "@/lib/i18n/context";
+import { createClient } from "@/lib/supabase/client";
 import StudentForm from "@/components/StudentForm";
 import type { Student, DocumentRow } from "@/lib/types";
 import { updateStudent } from "../actions";
@@ -11,13 +13,17 @@ import { updateStudent } from "../actions";
 export default function StudentProfileClient({
   student,
   documents,
+  photoUrl,
 }: {
   student: Student;
   documents: (DocumentRow & { signedUrl: string | null })[];
+  photoUrl: string | null;
 }) {
   const { t, lang } = useLang();
+  const router = useRouter();
   const [tab, setTab] = useState<"info" | "files">("info");
   const [editing, setEditing] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const BackIcon = lang === "ar" ? ArrowRight : ArrowLeft;
 
   const boundUpdate = (formData: FormData) => {
@@ -25,16 +31,50 @@ export default function StudentProfileClient({
     setEditing(false);
   };
 
+  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingPhoto(true);
+    const supabase = createClient();
+    const path = `students/${student.id}/photo-${Date.now()}-${file.name}`;
+
+    const { error: uploadError } = await supabase.storage.from("documents").upload(path, file);
+    if (!uploadError) {
+      await supabase.from("students").update({ photo_path: path }).eq("id", student.id);
+      router.refresh();
+    }
+    setUploadingPhoto(false);
+  }
+
   return (
     <div>
       <Link href="/students" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-4">
         <BackIcon size={15} /> {t("backToStudents")}
       </Link>
 
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h1 className="text-xl font-semibold text-slate-900">{student.name_ar}</h1>
-          <div className="text-xs text-slate-400">{student.student_code}</div>
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <div className="relative shrink-0">
+            {photoUrl ? (
+              <img src={photoUrl} alt={student.name_ar} className="w-16 h-16 rounded-full object-cover border border-slate-200" />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-slate-100 text-slate-300 flex items-center justify-center">
+                <User size={26} />
+              </div>
+            )}
+            <label className="absolute -bottom-1 -end-1 bg-slate-900 text-white rounded-full p-1.5 cursor-pointer hover:bg-slate-700">
+              <Upload size={11} />
+              <input type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} disabled={uploadingPhoto} />
+            </label>
+          </div>
+          <div>
+            <h1 className="text-xl font-semibold text-slate-900">
+              {student.name_ar}
+              {student.name_en ? ` · ${student.name_en}` : ""}
+            </h1>
+            <div className="text-xs text-slate-400">{student.student_code}</div>
+          </div>
         </div>
         {tab === "info" && !editing && (
           <button

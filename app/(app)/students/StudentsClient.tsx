@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, User } from "lucide-react";
 import { useLang } from "@/lib/i18n/context";
 import type { Student } from "@/lib/types";
 
-export default function StudentsClient({ students }: { students: Student[] }) {
+export default function StudentsClient({ students }: { students: (Student & { photoUrl: string | null })[] }) {
   const { t } = useLang();
   const [query, setQuery] = useState("");
 
@@ -47,8 +47,26 @@ export default function StudentsClient({ students }: { students: Student[] }) {
               href={`/students/${s.id}`}
               className="bg-white border border-slate-200 rounded-xl p-4 hover:border-blue-300 hover:shadow-sm transition-all"
             >
-              <div className="font-medium text-slate-900">{s.name_ar}</div>
-              <div className="text-xs text-slate-400 mb-2">{s.student_code || "—"}</div>
+              <div className="flex items-center gap-3 mb-2">
+                {s.photoUrl ? (
+                  <img
+                    src={s.photoUrl}
+                    alt={s.name_ar}
+                    className="w-12 h-12 rounded-full object-cover shrink-0 border border-slate-200"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-300 flex items-center justify-center shrink-0">
+                    <User size={20} />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <div className="font-medium text-slate-900 truncate">
+                    {s.name_ar}
+                    {s.name_en ? ` · ${s.name_en}` : ""}
+                  </div>
+                  <div className="text-xs text-slate-400">{s.student_code || "—"}</div>
+                </div>
+              </div>
               <div className="flex gap-1.5 flex-wrap">
                 {s.grade && (
                   <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{s.grade}</span>

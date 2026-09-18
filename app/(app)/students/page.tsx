@@ -10,5 +10,13 @@ export default async function StudentsPage() {
     .eq("status", "active")
     .order("name_ar", { ascending: true });
 
-  return <StudentsClient students={(students as Student[]) ?? []} />;
+  const withPhotos = await Promise.all(
+    ((students as Student[]) ?? []).map(async (s) => {
+      if (!s.photo_path) return { ...s, photoUrl: null };
+      const { data: signed } = await supabase.storage.from("documents").createSignedUrl(s.photo_path, 3600);
+      return { ...s, photoUrl: signed?.signedUrl ?? null };
+    })
+  );
+
+  return <StudentsClient students={withPhotos} />;
 }

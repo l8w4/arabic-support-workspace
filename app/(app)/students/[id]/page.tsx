@@ -26,5 +26,12 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
     })
   );
 
-  return <StudentProfileClient student={student as Student} documents={docsWithUrls} />;
+  let photoUrl: string | null = null;
+  const studentRow = student as Student;
+  if (studentRow.photo_path) {
+    const { data: signed } = await supabase.storage.from("documents").createSignedUrl(studentRow.photo_path, 3600);
+    photoUrl = signed?.signedUrl ?? null;
+  }
+
+  return <StudentProfileClient student={studentRow} documents={docsWithUrls} photoUrl={photoUrl} />;
 }
