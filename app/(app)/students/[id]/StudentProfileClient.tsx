@@ -41,7 +41,7 @@ export default function StudentProfileClient({
             onClick={() => setEditing(true)}
             className="flex items-center gap-1.5 text-sm bg-slate-900 text-white px-3.5 py-2 rounded-lg"
           >
-            <Pencil size={14} /> {t("save") === "حفظ" ? "تعديل" : "Edit"}
+            <Pencil size={14} /> {t("edit")}
           </button>
         )}
       </div>

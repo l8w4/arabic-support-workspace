@@ -14,6 +14,40 @@ export type Student = {
   created_at: string;
 };
 
+export type ProgressRating = "great" | "noticeable" | "slight" | "none";
+export type PlanStatus = "draft" | "active" | "under_review" | "completed";
+
+export type Plan = {
+  id: string;
+  student_id: string;
+  term: string | null;
+  starts_on: string | null;
+  ends_on: string | null;
+  general_objectives: string | null;
+  coordinator_name: string | null;
+  progress_rating: ProgressRating | null;
+  review_on: string | null;
+  status: PlanStatus;
+  document_path: string | null;
+  final_report: string | null;
+  created_at: string;
+  updated_at: string;
+  // joined for display
+  students?: { name_ar: string } | null;
+};
+
+export type PlanReview = {
+  id: string;
+  plan_id: string;
+  reviewed_on: string;
+  progress_rating: ProgressRating;
+  notes: string | null;
+  reviewed_by: string | null;
+  created_at: string;
+  // joined for display
+  profiles?: { full_name_ar: string } | null;
+};
+
 export type DocType = "worksheet" | "consent" | "report" | "photo" | "plan" | "prep" | "other";
 
 export type DocumentRow = {
