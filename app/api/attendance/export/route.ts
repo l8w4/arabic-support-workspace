@@ -99,7 +99,6 @@ export async function GET(request: NextRequest) {
   for (const date of dates) {
     for (const e of enrolled) {
       if (savedKeys.has(`${date}:${e.student_id}`)) continue;
-      if (e.joined_on > date) continue;
       if (e.left_on && date >= e.left_on) continue;
       rows.push({ date, name: e.students?.name_ar ?? "", status: "present", note: "" });
     }
