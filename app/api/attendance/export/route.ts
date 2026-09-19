@@ -68,9 +68,9 @@ export async function GET(request: NextRequest) {
   }[]) ?? [];
 
   // The attendance screen shows every enrolled student as "present" until
-  // saved, so on any date that has saved records we fill in the enrolled
-  // students who have no row, as present. Dates with no saved records at all
-  // are left out, since there is no way to tell if they were school days.
+  // saved, so an untouched day means everyone attended. Every day in the
+  // period is exported: saved rows as-is, everyone else as present. Fridays
+  // and Saturdays (Qatar weekend) are skipped unless something was saved.
   const rows: Row[] = [];
   const savedKeys = new Set<string>();
   const dates = new Set<string>();
@@ -79,6 +79,21 @@ export async function GET(request: NextRequest) {
     savedKeys.add(`${r.attend_date}:${r.student_id}`);
     dates.add(r.attend_date);
     rows.push({ date: r.attend_date, name: r.students?.name_ar ?? "", status: r.status, note: r.note ?? "" });
+  }
+
+  const today = new Date(Date.now() + 3 * 3600 * 1000).toISOString().slice(0, 10);
+  const earliest = [...savedRows.map((r) => r.attend_date), ...enrolled.map((e) => e.joined_on)].sort()[0];
+  const start = from ?? earliest;
+  const end = to && to < today ? to : today;
+
+  if (start) {
+    const cursor = new Date(`${start}T00:00:00Z`);
+    const last = new Date(`${end}T00:00:00Z`);
+    for (let i = 0; cursor <= last && i < 731; i++) {
+      const day = cursor.getUTCDay();
+      if (day !== 5 && day !== 6) dates.add(cursor.toISOString().slice(0, 10));
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
   }
 
   for (const date of dates) {
