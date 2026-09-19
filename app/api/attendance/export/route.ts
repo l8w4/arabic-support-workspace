@@ -9,6 +9,8 @@ const STATUS_LABELS_AR: Record<string, string> = {
   late: "متأخر",
 };
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 function escapeCsv(value: string) {
   if (value.includes(",") || value.includes('"') || value.includes("\n")) {
     return `"${value.replace(/"/g, '""')}"`;
@@ -22,6 +24,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "class_id is required" }, { status: 400 });
   }
 
+  const fromParam = request.nextUrl.searchParams.get("from");
+  const toParam = request.nextUrl.searchParams.get("to");
+  const from = fromParam && DATE_RE.test(fromParam) ? fromParam : null;
+  const to = toParam && DATE_RE.test(toParam) ? toParam : null;
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -30,28 +37,73 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const { data: rows } = await supabase
+  let attendanceQuery = supabase
     .from("attendance")
-    .select("attend_date, status, note, students(name_ar)")
-    .eq("class_id", classId)
-    .order("attend_date", { ascending: true });
+    .select("attend_date, student_id, status, note, students(name_ar)")
+    .eq("class_id", classId);
+  if (from) attendanceQuery = attendanceQuery.gte("attend_date", from);
+  if (to) attendanceQuery = attendanceQuery.lte("attend_date", to);
+
+  const [{ data: saved }, { data: enrollments }] = await Promise.all([
+    attendanceQuery,
+    supabase
+      .from("class_students")
+      .select("student_id, joined_on, left_on, students(name_ar)")
+      .eq("class_id", classId),
+  ]);
+
+  type Row = { date: string; name: string; status: string; note: string };
+  const savedRows = (saved as unknown as {
+    attend_date: string;
+    student_id: string;
+    status: string;
+    note: string | null;
+    students: { name_ar: string } | null;
+  }[]) ?? [];
+  const enrolled = (enrollments as unknown as {
+    student_id: string;
+    joined_on: string;
+    left_on: string | null;
+    students: { name_ar: string } | null;
+  }[]) ?? [];
+
+  // The attendance screen shows every enrolled student as "present" until
+  // saved, so on any date that has saved records we fill in the enrolled
+  // students who have no row, as present. Dates with no saved records at all
+  // are left out, since there is no way to tell if they were school days.
+  const rows: Row[] = [];
+  const savedKeys = new Set<string>();
+  const dates = new Set<string>();
+
+  for (const r of savedRows) {
+    savedKeys.add(`${r.attend_date}:${r.student_id}`);
+    dates.add(r.attend_date);
+    rows.push({ date: r.attend_date, name: r.students?.name_ar ?? "", status: r.status, note: r.note ?? "" });
+  }
+
+  for (const date of dates) {
+    for (const e of enrolled) {
+      if (savedKeys.has(`${date}:${e.student_id}`)) continue;
+      if (e.joined_on > date) continue;
+      if (e.left_on && date >= e.left_on) continue;
+      rows.push({ date, name: e.students?.name_ar ?? "", status: "present", note: "" });
+    }
+  }
+
+  rows.sort((a, b) => (a.date === b.date ? a.name.localeCompare(b.name, "ar") : a.date.localeCompare(b.date)));
 
   const header = ["Date", "Student", "Status", "Note"].join(",");
-  const lines = (
-    (rows as unknown as { attend_date: string; status: string; note: string | null; students: { name_ar: string } | null }[]) ??
-    []
-  ).map((r) =>
-    [r.attend_date, escapeCsv(r.students?.name_ar ?? ""), STATUS_LABELS_AR[r.status] ?? r.status, escapeCsv(r.note ?? "")].join(
-      ","
-    )
+  const lines = rows.map((r) =>
+    [r.date, escapeCsv(r.name), STATUS_LABELS_AR[r.status] ?? r.status, escapeCsv(r.note)].join(",")
   );
 
   const csv = "﻿" + [header, ...lines].join("\n");
+  const suffix = from || to ? `-${from ?? "start"}-to-${to ?? "latest"}` : "";
 
   return new NextResponse(csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="attendance-export.csv"`,
+      "Content-Disposition": `attachment; filename="attendance-export${suffix}.csv"`,
     },
   });
 }

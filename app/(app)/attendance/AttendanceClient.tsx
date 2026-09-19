@@ -74,6 +74,14 @@ export default function AttendanceClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [classId, date, roster, existing]);
 
+  const [exportFrom, setExportFrom] = useState("");
+  const [exportTo, setExportTo] = useState("");
+
+  const exportParams = new URLSearchParams({ class_id: classId });
+  if (exportFrom) exportParams.set("from", exportFrom);
+  if (exportTo) exportParams.set("to", exportTo);
+  const exportHref = `/api/attendance/export?${exportParams.toString()}`;
+
   const selectedClass = classes.find((c) => c.id === classId);
 
   const tally = useMemo(() => {
@@ -129,16 +137,39 @@ export default function AttendanceClient({
             onChange={(e) => goTo(classId, e.target.value)}
             className="text-sm border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
           />
-          {classId && (
-            <a
-              href={`/api/attendance/export?class_id=${classId}`}
-              className="flex items-center gap-1.5 text-sm border border-slate-300 text-slate-600 hover:bg-slate-50 px-3 py-2 rounded-lg"
-            >
-              <Download size={15} /> {t("downloadAttendance")}
-            </a>
-          )}
         </div>
       </div>
+
+      {classId && (
+        <div className="flex items-center gap-2 flex-wrap mb-5 text-sm">
+          <span className="text-xs text-slate-500">{t("downloadAttendance")}:</span>
+          <label className="flex items-center gap-1.5 text-xs text-slate-500">
+            {t("weekStart")}
+            <input
+              type="date"
+              value={exportFrom}
+              onChange={(e) => setExportFrom(e.target.value)}
+              className="text-sm border border-slate-300 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            />
+          </label>
+          <label className="flex items-center gap-1.5 text-xs text-slate-500">
+            {t("weekEnd")}
+            <input
+              type="date"
+              value={exportTo}
+              onChange={(e) => setExportTo(e.target.value)}
+              className="text-sm border border-slate-300 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            />
+          </label>
+          <a
+            href={exportHref}
+            className="flex items-center gap-1.5 text-sm border border-slate-300 text-slate-600 hover:bg-slate-50 px-3 py-1.5 rounded-lg"
+          >
+            <Download size={15} /> CSV
+          </a>
+          <span className="text-xs text-slate-400">{t("exportHint")}</span>
+        </div>
+      )}
 
       {!ready ? (
         <div className="text-sm text-slate-500">{t("pickClassToStart")}</div>
