@@ -56,16 +56,25 @@ gitignored).
   **Health status** (`الحالة الصحية`) is optional free text shown only on the
   profile info tab and the report — never on list cards, and the list query
   selects explicit columns so it is not sent to the list page.
-- **Homework tab** (`homework_entries`): per-student entries with a four-point
-  qualitative status (`completed` مكتمل / `partial` جزئي / `needs_support`
-  يحتاج مساعدة / `not_done` لم يُنجز) — deliberately not a numeric grade —
-  plus note and an optional attached file (stored as a `documents` row,
-  `worksheet` or `photo`, linked by `document_id`). Add and delete only.
-- **Marks tab** (`grade_entries`): per-student assessments stored as score out
-  of a max (default 100, so different scales work), date and note; shows
-  "score / max" and percent per entry plus the average percent. Numeric on
-  purpose here (Enas asked for marks) unlike homework/plan progress. `score <=
-  max_score` is enforced by the database. Add (Server Action) and delete only.
+- **Homework** (`homework_entries`): four-point qualitative status
+  (`completed` مكتمل / `partial` جزئي / `needs_support` يحتاج مساعدة /
+  `not_done` لم يُنجز) — deliberately not a numeric grade — plus note and an
+  optional attached file (a `documents` row, `worksheet` or `photo`, linked by
+  `document_id`). Two entry points: the **Homework sidebar page** `/homework`
+  (under Attendance) — pick a class, enter title + date, set a status per
+  student (blank = skipped, "mark all completed" shortcut), one Save inserts a
+  row per marked student; below it a table of recent entries (latest 200,
+  filtered to the class, delete per row) — and the **Homework tab on each
+  student's profile** (add one entry, with a file if wanted, plus that
+  student's history). The class page has no file attach.
+- **Marks** (`grade_entries`): assessments stored as score out of a max
+  (default 100, so different scales work) with date and note; shown as
+  "score / max" and percent. Numeric on purpose (Enas asked for marks), unlike
+  homework/plan progress; `score <= max_score` is enforced by the database.
+  Same two entry points: the **Marks sidebar page** `/marks` (pick class,
+  assessment name, "out of" and date, type a mark per student, blank = skipped,
+  one Save; recent-entries table with delete) and the **Marks tab on the
+  student profile** (that student's entries, average percent, add/delete).
 - **Printable report** `/students/[id]/report`: student info, attendance
   summary (counts, rate = (present + late) / saved days, list of non-present
   days), homework record, marks record (with average), uploaded-files list
@@ -160,6 +169,9 @@ migration before deploying code that needs it.**
 
 ## Change log
 
+- 2026-09-20 (night): Homework and Marks added as their own sidebar pages
+  under Attendance (class-wide recording + recent entries); the profile tabs
+  stay. Shared helpers moved to `lib/homework.ts` and `lib/grades.ts`.
 - 2026-09-20 (evening): class-first Students page with a "not assigned to a
   class" bucket; marks tab + marks in the report (migration 0004).
 - 2026-09-20 (later): Arabic app name is now "مركز دعم للغة العربية" (login,
