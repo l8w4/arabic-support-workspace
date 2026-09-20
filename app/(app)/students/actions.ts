@@ -66,3 +66,35 @@ export async function deleteHomeworkEntry(id: string, studentId: string) {
   revalidatePath(`/students/${studentId}`);
   return { success: !error };
 }
+
+export async function addGradeEntry(studentId: string, formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const title = (formData.get("title") as string)?.trim();
+  const score = Number(formData.get("score"));
+  const maxScore = Number(formData.get("max_score") || 100);
+  if (!title || Number.isNaN(score)) return { success: false, error: undefined };
+
+  const { error } = await supabase.from("grade_entries").insert({
+    student_id: studentId,
+    title,
+    assessed_date: (formData.get("assessed_date") as string) || undefined,
+    score,
+    max_score: maxScore,
+    note: (formData.get("note") as string)?.trim() || null,
+    created_by: user?.id,
+  });
+
+  revalidatePath(`/students/${studentId}`);
+  return { success: !error, error: error?.message };
+}
+
+export async function deleteGradeEntry(id: string, studentId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("grade_entries").delete().eq("id", id);
+  revalidatePath(`/students/${studentId}`);
+  return { success: !error };
+}

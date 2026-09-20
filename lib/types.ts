@@ -30,6 +30,17 @@ export type HomeworkEntry = {
   documents?: { file_name: string; file_path: string } | null;
 };
 
+export type GradeEntry = {
+  id: string;
+  student_id: string;
+  title: string;
+  assessed_date: string;
+  score: number;
+  max_score: number;
+  note: string | null;
+  created_at: string;
+};
+
 export type Class = {
   id: string;
   name_ar: string;

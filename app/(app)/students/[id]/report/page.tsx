@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ReportClient from "./ReportClient";
-import type { Student, AttendanceStatus, HomeworkStatus, DocType } from "@/lib/types";
+import type { Student, AttendanceStatus, HomeworkStatus, DocType, GradeEntry } from "@/lib/types";
 
 export type ReportAttendance = {
   attend_date: string;
@@ -22,7 +22,7 @@ export default async function StudentReportPage({ params }: { params: Promise<{ 
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: student }, { data: attendance }, { data: homework }, { data: files }] = await Promise.all([
+  const [{ data: student }, { data: attendance }, { data: homework }, { data: files }, { data: grades }] = await Promise.all([
     supabase.from("students").select("*").eq("id", id).single(),
     supabase
       .from("attendance")
@@ -40,6 +40,11 @@ export default async function StudentReportPage({ params }: { params: Promise<{ 
       .select("id, title, doc_type, file_name, uploaded_at")
       .eq("student_id", id)
       .order("uploaded_at", { ascending: false }),
+    supabase
+      .from("grade_entries")
+      .select("id, student_id, title, assessed_date, score, max_score, note, created_at")
+      .eq("student_id", id)
+      .order("assessed_date", { ascending: false }),
   ]);
 
   if (!student) notFound();
@@ -58,6 +63,7 @@ export default async function StudentReportPage({ params }: { params: Promise<{ 
       attendance={(attendance as unknown as ReportAttendance[]) ?? []}
       homework={(homework as unknown as ReportHomework[]) ?? []}
       files={(files as unknown as ReportFile[]) ?? []}
+      grades={(grades as GradeEntry[]) ?? []}
     />
   );
 }

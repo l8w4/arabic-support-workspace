@@ -41,21 +41,35 @@ gitignored).
 
 - **Auth:** Supabase Auth, roles `admin` / `teacher` / `viewer` enforced by
   Postgres RLS (`supabase/migrations/0001_init.sql`).
-- **Students:** CRUD, search, sort (name A–Z with Arabic collation, grade,
-  diagnostic level, class, recently added; blanks last), cards show photo,
-  Arabic + English name and class tags. Profile has tabs: info / homework /
-  files. Photo upload from the profile (`students.photo_path`, private bucket,
-  signed URLs). **Health status** (`الحالة الصحية`) is optional free text
-  shown only on the profile info tab and the report — never on list cards, and
-  the list query selects explicit columns so it is not sent to the list page.
+- **Students** `/students` is class-first: the landing view is a grid of active
+  class cards (name, academic year, student count) plus a **"not assigned to a
+  class"** card (highlighted when non-empty) and an **all students** card;
+  picking one shows its students with search, sort (name A–Z with Arabic
+  collation, grade, diagnostic level, class, recently added; blanks last) and
+  "Add student". The selection lives in the URL (`?class=<id>|unassigned|all`,
+  via `history.replaceState`); "back to classes" returns to the picker. A
+  student counts as unassigned when they are in no *active* class (archived
+  classes don't count). New students start unassigned — enrol them from the
+  Classes roster. Cards show photo, Arabic + English name and (in all/unassigned
+  views) class tags. Profile has tabs: info / homework / marks / files. Photo
+  upload from the profile (`students.photo_path`, private bucket, signed URLs).
+  **Health status** (`الحالة الصحية`) is optional free text shown only on the
+  profile info tab and the report — never on list cards, and the list query
+  selects explicit columns so it is not sent to the list page.
 - **Homework tab** (`homework_entries`): per-student entries with a four-point
   qualitative status (`completed` مكتمل / `partial` جزئي / `needs_support`
   يحتاج مساعدة / `not_done` لم يُنجز) — deliberately not a numeric grade —
   plus note and an optional attached file (stored as a `documents` row,
   `worksheet` or `photo`, linked by `document_id`). Add and delete only.
+- **Marks tab** (`grade_entries`): per-student assessments stored as score out
+  of a max (default 100, so different scales work), date and note; shows
+  "score / max" and percent per entry plus the average percent. Numeric on
+  purpose here (Enas asked for marks) unlike homework/plan progress. `score <=
+  max_score` is enforced by the database. Add (Server Action) and delete only.
 - **Printable report** `/students/[id]/report`: student info, attendance
   summary (counts, rate = (present + late) / saved days, list of non-present
-  days), homework record, uploaded-files list (name/type/date). Plain page +
+  days), homework record, marks record (with average), uploaded-files list
+  (name/type/date). Plain page +
   `@media print` CSS (sidebar hidden via `print:hidden`); "Print → Save as PDF"
   from the browser handles Arabic. Opened from "طباعة التقرير" on the profile.
 - **Files:** upload to private storage, tag by type, filter, signed download
@@ -98,6 +112,7 @@ migration before deploying code that needs it.**
 - `0002_health_status.sql` — `students.health_status text`.
 - `0003_homework_entries.sql` — `homework_entries` + RLS (view: any signed-in
   user; write: `can_edit()`).
+- `0004_grade_entries.sql` — `grade_entries` + RLS (same pattern).
 
 ## Key decisions (don't re-litigate without a reason)
 
@@ -145,6 +160,8 @@ migration before deploying code that needs it.**
 
 ## Change log
 
+- 2026-09-20 (evening): class-first Students page with a "not assigned to a
+  class" bucket; marks tab + marks in the report (migration 0004).
 - 2026-09-20 (later): Arabic app name is now "مركز دعم للغة العربية" (login,
   sidebar, tab title). Student create/edit now show the real database error
   instead of silently reloading a blank form — this is how a missing migration

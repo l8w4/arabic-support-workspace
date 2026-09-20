@@ -8,23 +8,26 @@ import { useLang } from "@/lib/i18n/context";
 import { createClient } from "@/lib/supabase/client";
 import StudentForm from "@/components/StudentForm";
 import HomeworkTab from "./HomeworkTab";
-import type { Student, DocumentRow, HomeworkEntry } from "@/lib/types";
+import GradesTab from "./GradesTab";
+import type { Student, DocumentRow, HomeworkEntry, GradeEntry } from "@/lib/types";
 import { updateStudent } from "../actions";
 
 export default function StudentProfileClient({
   student,
   documents,
   homework,
+  grades,
   photoUrl,
 }: {
   student: Student;
   documents: (DocumentRow & { signedUrl: string | null })[];
   homework: (HomeworkEntry & { signedUrl: string | null })[];
+  grades: GradeEntry[];
   photoUrl: string | null;
 }) {
   const { t, lang } = useLang();
   const router = useRouter();
-  const [tab, setTab] = useState<"info" | "homework" | "files">("info");
+  const [tab, setTab] = useState<"info" | "homework" | "grades" | "files">("info");
   const [editing, setEditing] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const BackIcon = lang === "ar" ? ArrowRight : ArrowLeft;
@@ -103,7 +106,7 @@ export default function StudentProfileClient({
       </div>
 
       <div className="flex gap-1 border-b border-slate-200 mb-5">
-        {(["info", "homework", "files"] as const).map((tb) => (
+        {(["info", "homework", "grades", "files"] as const).map((tb) => (
           <button
             key={tb}
             onClick={() => setTab(tb)}
@@ -111,7 +114,13 @@ export default function StudentProfileClient({
               tab === tb ? "border-blue-600 text-blue-700 font-medium" : "border-transparent text-slate-500"
             }`}
           >
-            {tb === "info" ? t("studentInfo") : tb === "homework" ? t("studentHomework") : t("studentFiles")}
+            {tb === "info"
+              ? t("studentInfo")
+              : tb === "homework"
+              ? t("studentHomework")
+              : tb === "grades"
+              ? t("studentGrades")
+              : t("studentFiles")}
           </button>
         ))}
       </div>
@@ -142,6 +151,8 @@ export default function StudentProfileClient({
         ))}
 
       {tab === "homework" && <HomeworkTab studentId={student.id} entries={homework} />}
+
+      {tab === "grades" && <GradesTab studentId={student.id} entries={grades} />}
 
       {tab === "files" && (
         <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100">

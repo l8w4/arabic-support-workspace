@@ -4,7 +4,8 @@ import Link from "next/link";
 import { ArrowRight, ArrowLeft, Printer, User } from "lucide-react";
 import { useLang } from "@/lib/i18n/context";
 import { HOMEWORK_STATUS_CLASS } from "../HomeworkTab";
-import type { AttendanceStatus, Student } from "@/lib/types";
+import { percentOf, averagePercent } from "../GradesTab";
+import type { AttendanceStatus, GradeEntry, Student } from "@/lib/types";
 import type { ReportAttendance, ReportHomework, ReportFile } from "./page";
 
 const ATTENDANCE_STATUSES: AttendanceStatus[] = ["present", "absent", "excused", "truant", "late"];
@@ -15,12 +16,14 @@ export default function ReportClient({
   attendance,
   homework,
   files,
+  grades,
 }: {
   student: Student;
   photoUrl: string | null;
   attendance: ReportAttendance[];
   homework: ReportHomework[];
   files: ReportFile[];
+  grades: GradeEntry[];
 }) {
   const { t, lang } = useLang();
   const BackIcon = lang === "ar" ? ArrowRight : ArrowLeft;
@@ -33,6 +36,7 @@ export default function ReportClient({
   const attended = counts.present + counts.late;
   const rate = total ? Math.round((attended / total) * 100) : 0;
   const nonPresent = attendance.filter((a) => a.status !== "present");
+  const gradeAverage = averagePercent(grades);
 
   return (
     <div>
@@ -166,6 +170,41 @@ export default function ReportClient({
                 ))}
               </tbody>
             </table>
+          )}
+        </section>
+
+        <section className="report-section mb-6">
+          <h2 className="text-sm font-semibold text-slate-900 mb-3">{t("marksRecord")}</h2>
+          {grades.length === 0 ? (
+            <div className="text-sm text-slate-500">{t("noGradesYet")}</div>
+          ) : (
+            <>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-300 text-xs text-slate-500">
+                    <th className="py-1.5 pe-3 font-medium text-start">{t("assessedDate")}</th>
+                    <th className="py-1.5 pe-3 font-medium text-start">{t("gradeTitle")}</th>
+                    <th className="py-1.5 pe-3 font-medium text-start">{t("gradeScore")}</th>
+                    <th className="py-1.5 font-medium text-start">{t("notes")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {grades.map((g) => (
+                    <tr key={g.id} className="border-b border-slate-100 align-top">
+                      <td className="py-1.5 pe-3 text-slate-700 whitespace-nowrap">{fmt(g.assessed_date)}</td>
+                      <td className="py-1.5 pe-3 text-slate-800">{g.title}</td>
+                      <td className="py-1.5 pe-3 text-slate-800 whitespace-nowrap" dir="ltr">
+                        {Number(g.score)} / {Number(g.max_score)} ({percentOf(g)}%)
+                      </td>
+                      <td className="py-1.5 text-slate-500 whitespace-pre-line">{g.note ?? ""}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="text-sm text-slate-700 mt-2">
+                {t("averageMark")}: <strong>{gradeAverage}%</strong>
+              </div>
+            </>
           )}
         </section>
 

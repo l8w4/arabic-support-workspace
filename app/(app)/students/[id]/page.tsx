@@ -1,13 +1,13 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import StudentProfileClient from "./StudentProfileClient";
-import type { Student, DocumentRow, HomeworkEntry } from "@/lib/types";
+import type { Student, DocumentRow, HomeworkEntry, GradeEntry } from "@/lib/types";
 
 export default async function StudentProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: student }, { data: docs }, { data: homework }] = await Promise.all([
+  const [{ data: student }, { data: docs }, { data: homework }, { data: grades }] = await Promise.all([
     supabase.from("students").select("*").eq("id", id).single(),
     supabase
       .from("documents")
@@ -19,6 +19,12 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
       .select("id, student_id, title, assigned_date, status, note, document_id, created_at, documents(file_name, file_path)")
       .eq("student_id", id)
       .order("assigned_date", { ascending: false })
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("grade_entries")
+      .select("id, student_id, title, assessed_date, score, max_score, note, created_at")
+      .eq("student_id", id)
+      .order("assessed_date", { ascending: false })
       .order("created_at", { ascending: false }),
   ]);
 
@@ -47,5 +53,13 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
     photoUrl = signed?.signedUrl ?? null;
   }
 
-  return <StudentProfileClient student={studentRow} documents={docsWithUrls} homework={homeworkWithUrls} photoUrl={photoUrl} />;
+  return (
+    <StudentProfileClient
+      student={studentRow}
+      documents={docsWithUrls}
+      homework={homeworkWithUrls}
+      grades={(grades as GradeEntry[]) ?? []}
+      photoUrl={photoUrl}
+    />
+  );
 }
