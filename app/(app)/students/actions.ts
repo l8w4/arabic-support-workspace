@@ -34,7 +34,7 @@ export async function createStudent(formData: FormData) {
     .single();
 
   if (error || !data) {
-    redirect("/students/new?error=1");
+    redirect(`/students/new?error=${encodeURIComponent(error?.message ?? "1")}`);
   }
 
   revalidatePath("/students");
@@ -48,15 +48,16 @@ export async function updateStudent(id: string, formData: FormData) {
   } = await supabase.auth.getUser();
 
   const fields = readStudentForm(formData);
-  if (!fields.name_ar) return;
+  if (!fields.name_ar) return { success: false, error: undefined };
 
-  await supabase
+  const { error } = await supabase
     .from("students")
     .update({ ...fields, updated_by: user?.id, updated_at: new Date().toISOString() })
     .eq("id", id);
 
   revalidatePath(`/students/${id}`);
   revalidatePath("/students");
+  return { success: !error, error: error?.message };
 }
 
 export async function deleteHomeworkEntry(id: string, studentId: string) {

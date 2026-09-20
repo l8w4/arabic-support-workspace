@@ -29,9 +29,13 @@ export default function StudentProfileClient({
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const BackIcon = lang === "ar" ? ArrowRight : ArrowLeft;
 
-  const boundUpdate = (formData: FormData) => {
-    updateStudent(student.id, formData);
-    setEditing(false);
+  const [saveError, setSaveError] = useState("");
+
+  const boundUpdate = async (formData: FormData) => {
+    setSaveError("");
+    const result = await updateStudent(student.id, formData);
+    if (result?.success) setEditing(false);
+    else setSaveError(result?.error ?? t("saveError"));
   };
 
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -114,7 +118,14 @@ export default function StudentProfileClient({
 
       {tab === "info" &&
         (editing ? (
-          <StudentForm action={boundUpdate} defaultValues={student} />
+          <div>
+            {saveError && (
+              <div className="text-sm text-red-600 mb-4 max-w-lg" dir="ltr">
+                {t("saveError")}: {saveError}
+              </div>
+            )}
+            <StudentForm action={boundUpdate} defaultValues={student} />
+          </div>
         ) : (
           <div className="bg-white border border-slate-200 rounded-xl p-5 grid grid-cols-2 gap-4 max-w-lg">
             <Field label={t("grade")} value={student.grade} />

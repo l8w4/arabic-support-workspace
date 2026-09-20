@@ -1,6 +1,6 @@
 export const STRINGS = {
   ar: {
-    appName: "مساحة عمل مركز الدعم",
+    appName: "مركز دعم للغة العربية",
     appNameSub: "We Care Support Centre",
     username: "البريد الإلكتروني",
     password: "كلمة المرور",
@@ -153,6 +153,7 @@ export const STRINGS = {
     uploadedFiles: "الملفات المرفوعة",
     backToProfile: "رجوع إلى ملف الطالب",
     personalInfo: "بيانات الطالب",
+    createStudentFailed: "تعذّر إنشاء الطالب",
     uploadPhoto: "رفع صورة",
     changePhoto: "تغيير الصورة",
     manageRoster: "إدارة الطلاب",
@@ -177,7 +178,7 @@ export const STRINGS = {
   },
   en: {
     appName: "Support Centre Workspace",
-    appNameSub: "مركز الدعم العربي",
+    appNameSub: "مركز دعم للغة العربية",
     username: "Email",
     password: "Password",
     loginBtn: "Log in",
@@ -329,6 +330,7 @@ export const STRINGS = {
     uploadedFiles: "Uploaded files",
     backToProfile: "Back to student profile",
     personalInfo: "Student information",
+    createStudentFailed: "Couldn't create the student",
     uploadPhoto: "Upload photo",
     changePhoto: "Change photo",
     manageRoster: "Manage students",

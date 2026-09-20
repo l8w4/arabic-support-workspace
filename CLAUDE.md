@@ -145,6 +145,14 @@ migration before deploying code that needs it.**
 
 ## Change log
 
+- 2026-09-20 (later): Arabic app name is now "مركز دعم للغة العربية" (login,
+  sidebar, tab title). Student create/edit now show the real database error
+  instead of silently reloading a blank form — this is how a missing migration
+  (0002 not yet run, so `health_status` did not exist) showed up as "creating a
+  student does nothing". Lesson: migrations must be run in Supabase before the
+  code that uses them is deployed; a REST probe with the anon key
+  (`/rest/v1/<table>?select=<col>&limit=1`) tells you whether a column/table
+  exists.
 - 2026-09-20: health status field, homework tab, printable student report
   (migrations 0002, 0003); class edit/delete; student sorting; logo.
 - 2026-09-19: attendance export fixed (default-present days, from/to period);
