@@ -5,18 +5,9 @@ import { useRouter } from "next/navigation";
 import { Plus, X, FileText, Trash2, Loader2 } from "lucide-react";
 import { useLang } from "@/lib/i18n/context";
 import { createClient } from "@/lib/supabase/client";
-import type { HomeworkEntry, HomeworkStatus } from "@/lib/types";
+import type { HomeworkEntry } from "@/lib/types";
+import { HOMEWORK_STATUSES as STATUSES, HOMEWORK_STATUS_CLASS } from "@/lib/homework";
 import { deleteHomeworkEntry } from "../actions";
-
-const STATUSES: HomeworkStatus[] = ["completed", "partial", "needs_support", "not_done"];
-
-// Reuses the shared status palette; the label text always accompanies the color.
-export const HOMEWORK_STATUS_CLASS: Record<HomeworkStatus, string> = {
-  completed: "status-present",
-  partial: "status-late",
-  needs_support: "status-excused",
-  not_done: "status-absent",
-};
 
 export default function HomeworkTab({
   studentId,

@@ -4,17 +4,8 @@ import { useState } from "react";
 import { Plus, X, Trash2, Loader2 } from "lucide-react";
 import { useLang } from "@/lib/i18n/context";
 import type { GradeEntry } from "@/lib/types";
+import { percentOf, averagePercent } from "@/lib/grades";
 import { addGradeEntry, deleteGradeEntry } from "../actions";
-
-export function percentOf(g: Pick<GradeEntry, "score" | "max_score">) {
-  return g.max_score > 0 ? Math.round((Number(g.score) / Number(g.max_score)) * 1000) / 10 : 0;
-}
-
-export function averagePercent(entries: Pick<GradeEntry, "score" | "max_score">[]) {
-  if (entries.length === 0) return null;
-  const sum = entries.reduce((acc, g) => acc + percentOf(g), 0);
-  return Math.round((sum / entries.length) * 10) / 10;
-}
 
 export default function GradesTab({ studentId, entries }: { studentId: string; entries: GradeEntry[] }) {
   const { t, lang } = useLang();

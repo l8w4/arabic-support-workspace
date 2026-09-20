@@ -9,6 +9,8 @@ import {
   ClipboardList,
   BookOpen,
   CalendarCheck,
+  BookMarked,
+  Award,
   Layers,
   LogOut,
   Languages,
@@ -29,6 +31,8 @@ function ShellInner({ profile, children }: { profile: Profile; children: React.R
     { href: "/plans", label: t("plans"), icon: ClipboardList },
     { href: "/prep", label: t("prep"), icon: BookOpen },
     { href: "/attendance", label: t("attendance"), icon: CalendarCheck },
+    { href: "/homework", label: t("studentHomework"), icon: BookMarked },
+    { href: "/marks", label: t("studentGrades"), icon: Award },
   ];
 
   const roleLabel = profile.role === "admin" ? t("admin") : profile.role === "teacher" ? t("teacher") : t("viewer");

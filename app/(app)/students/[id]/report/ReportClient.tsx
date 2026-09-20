@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { ArrowRight, ArrowLeft, Printer, User } from "lucide-react";
 import { useLang } from "@/lib/i18n/context";
-import { HOMEWORK_STATUS_CLASS } from "../HomeworkTab";
-import { percentOf, averagePercent } from "../GradesTab";
+import { HOMEWORK_STATUS_CLASS } from "@/lib/homework";
+import { percentOf, averagePercent } from "@/lib/grades";
 import type { AttendanceStatus, GradeEntry, Student } from "@/lib/types";
 import type { ReportAttendance, ReportHomework, ReportFile } from "./page";
 
