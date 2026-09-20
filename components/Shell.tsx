@@ -35,8 +35,8 @@ function ShellInner({ profile, children }: { profile: Profile; children: React.R
   const displayName = lang === "ar" ? profile.full_name_ar : profile.full_name_en || profile.full_name_ar;
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      <aside className="w-64 bg-white border-e border-slate-200 flex flex-col shrink-0">
+    <div className="flex min-h-screen bg-slate-50 print:block print:min-h-0 print:bg-white">
+      <aside className="w-64 bg-white border-e border-slate-200 flex flex-col shrink-0 print:hidden">
         <div className="p-5 border-b border-slate-200">
           <div className="flex items-center gap-3 mb-3">
             <img src="/logo.jpg" alt="We Care Support Centre" className="w-16 h-16 object-contain shrink-0" />
@@ -87,7 +87,7 @@ function ShellInner({ profile, children }: { profile: Profile; children: React.R
         </div>
       </aside>
 
-      <main className="flex-1 p-6 overflow-y-auto">{children}</main>
+      <main className="flex-1 p-6 overflow-y-auto print:p-0 print:overflow-visible">{children}</main>
     </div>
   );
 }

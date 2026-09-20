@@ -5,7 +5,10 @@ import type { Student } from "@/lib/types";
 export default async function StudentsPage() {
   const supabase = await createClient();
   const [{ data: students }, { data: memberships }] = await Promise.all([
-    supabase.from("students").select("*").eq("status", "active").order("name_ar", { ascending: true }),
+    supabase
+      .from("students")
+      .select("id, name_ar, name_en, student_code, grade, diagnostic_level, photo_path, status, created_at")
+      .eq("status", "active").order("name_ar", { ascending: true }),
     supabase.from("class_students").select("student_id, classes(name_ar)").is("left_on", null),
   ]);
 
@@ -16,7 +19,7 @@ export default async function StudentsPage() {
   }
 
   const withPhotos = await Promise.all(
-    ((students as Student[]) ?? []).map(async (s) => {
+    ((students as unknown as Student[]) ?? []).map(async (s) => {
       const classNames = (classesByStudent[s.id] ?? []).sort((a, b) => a.localeCompare(b, "ar"));
       if (!s.photo_path) return { ...s, photoUrl: null, classNames };
       const { data: signed } = await supabase.storage.from("documents").createSignedUrl(s.photo_path, 3600);

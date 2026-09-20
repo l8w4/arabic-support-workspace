@@ -14,6 +14,7 @@ function readStudentForm(formData: FormData) {
     guardian_name: (formData.get("guardian_name") as string)?.trim() || null,
     guardian_phone: (formData.get("guardian_phone") as string)?.trim() || null,
     general_notes: (formData.get("general_notes") as string)?.trim() || null,
+    health_status: (formData.get("health_status") as string)?.trim() || null,
   };
 }
 
@@ -56,4 +57,11 @@ export async function updateStudent(id: string, formData: FormData) {
 
   revalidatePath(`/students/${id}`);
   revalidatePath("/students");
+}
+
+export async function deleteHomeworkEntry(id: string, studentId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("homework_entries").delete().eq("id", id);
+  revalidatePath(`/students/${studentId}`);
+  return { success: !error };
 }

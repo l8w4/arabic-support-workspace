@@ -10,8 +10,24 @@ export type Student = {
   guardian_phone: string | null;
   second_contact: string | null;
   general_notes: string | null;
+  health_status: string | null;
   status: "active" | "archived";
   created_at: string;
+};
+
+export type HomeworkStatus = "completed" | "partial" | "needs_support" | "not_done";
+
+export type HomeworkEntry = {
+  id: string;
+  student_id: string;
+  title: string;
+  assigned_date: string;
+  status: HomeworkStatus;
+  note: string | null;
+  document_id: string | null;
+  created_at: string;
+  // joined for display
+  documents?: { file_name: string; file_path: string } | null;
 };
 
 export type Class = {

@@ -3,25 +3,28 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ArrowLeft, Pencil, FileText, User, Upload } from "lucide-react";
+import { ArrowRight, ArrowLeft, Pencil, FileText, User, Upload, Printer } from "lucide-react";
 import { useLang } from "@/lib/i18n/context";
 import { createClient } from "@/lib/supabase/client";
 import StudentForm from "@/components/StudentForm";
-import type { Student, DocumentRow } from "@/lib/types";
+import HomeworkTab from "./HomeworkTab";
+import type { Student, DocumentRow, HomeworkEntry } from "@/lib/types";
 import { updateStudent } from "../actions";
 
 export default function StudentProfileClient({
   student,
   documents,
+  homework,
   photoUrl,
 }: {
   student: Student;
   documents: (DocumentRow & { signedUrl: string | null })[];
+  homework: (HomeworkEntry & { signedUrl: string | null })[];
   photoUrl: string | null;
 }) {
   const { t, lang } = useLang();
   const router = useRouter();
-  const [tab, setTab] = useState<"info" | "files">("info");
+  const [tab, setTab] = useState<"info" | "homework" | "files">("info");
   const [editing, setEditing] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const BackIcon = lang === "ar" ? ArrowRight : ArrowLeft;
@@ -76,18 +79,27 @@ export default function StudentProfileClient({
             <div className="text-xs text-slate-400">{student.student_code}</div>
           </div>
         </div>
-        {tab === "info" && !editing && (
-          <button
-            onClick={() => setEditing(true)}
-            className="flex items-center gap-1.5 text-sm bg-slate-900 text-white px-3.5 py-2 rounded-lg"
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/students/${student.id}/report`}
+            target="_blank"
+            className="flex items-center gap-1.5 text-sm border border-slate-300 text-slate-600 hover:bg-slate-50 px-3.5 py-2 rounded-lg"
           >
-            <Pencil size={14} /> {t("edit")}
-          </button>
-        )}
+            <Printer size={14} /> {t("printReport")}
+          </Link>
+          {tab === "info" && !editing && (
+            <button
+              onClick={() => setEditing(true)}
+              className="flex items-center gap-1.5 text-sm bg-slate-900 text-white px-3.5 py-2 rounded-lg"
+            >
+              <Pencil size={14} /> {t("edit")}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex gap-1 border-b border-slate-200 mb-5">
-        {(["info", "files"] as const).map((tb) => (
+        {(["info", "homework", "files"] as const).map((tb) => (
           <button
             key={tb}
             onClick={() => setTab(tb)}
@@ -95,7 +107,7 @@ export default function StudentProfileClient({
               tab === tb ? "border-blue-600 text-blue-700 font-medium" : "border-transparent text-slate-500"
             }`}
           >
-            {tb === "info" ? t("studentInfo") : t("studentFiles")}
+            {tb === "info" ? t("studentInfo") : tb === "homework" ? t("studentHomework") : t("studentFiles")}
           </button>
         ))}
       </div>
@@ -107,6 +119,9 @@ export default function StudentProfileClient({
           <div className="bg-white border border-slate-200 rounded-xl p-5 grid grid-cols-2 gap-4 max-w-lg">
             <Field label={t("grade")} value={student.grade} />
             <Field label={t("diagnosticLevel")} value={student.diagnostic_level} />
+            <div className="col-span-2">
+              <Field label={t("healthStatus")} value={student.health_status} />
+            </div>
             <Field label={t("guardianName")} value={student.guardian_name} />
             <Field label={t("guardianPhone")} value={student.guardian_phone} />
             <div className="col-span-2">
@@ -114,6 +129,8 @@ export default function StudentProfileClient({
             </div>
           </div>
         ))}
+
+      {tab === "homework" && <HomeworkTab studentId={student.id} entries={homework} />}
 
       {tab === "files" && (
         <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100">

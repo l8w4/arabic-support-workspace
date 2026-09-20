@@ -47,3 +47,26 @@ body {
   background-color: #fce7f3;
   color: #9d174d;
 }
+
+/* Printing (used by /students/[id]/report). Browsers print Arabic natively,
+   so "Print -> Save as PDF" is the PDF route; colors are kept for status pills. */
+@media print {
+  @page {
+    margin: 14mm;
+  }
+  html,
+  body {
+    height: auto;
+    background: #fff;
+  }
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .report-section {
+    break-inside: avoid;
+  }
+  tr {
+    break-inside: avoid;
+  }
+}
