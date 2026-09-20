@@ -66,7 +66,11 @@ gitignored).
   row per marked student; below it a table of recent entries (latest 200,
   filtered to the class, delete per row) — and the **Homework tab on each
   student's profile** (add one entry, with a file if wanted, plus that
-  student's history). The class page has no file attach.
+  student's history). The class page has no file attach. Entries are editable
+  (title, date, status, note — pencil icon, inline form, `components/
+  HomeworkEditForm.tsx`) and deletable from both places. Deleting an entry
+  does not delete its attached file: the `documents` row and the storage
+  object stay (still visible in Files).
 - **Marks** (`grade_entries`): assessments stored as score out of a max
   (default 100, so different scales work) with date and note; shown as
   "score / max" and percent. Numeric on purpose (Enas asked for marks), unlike
@@ -75,6 +79,8 @@ gitignored).
   assessment name, "out of" and date, type a mark per student, blank = skipped,
   one Save; recent-entries table with delete) and the **Marks tab on the
   student profile** (that student's entries, average percent, add/delete).
+  Entries are editable (title, mark, "out of", date, note — pencil icon, inline
+  form, `components/MarkEditForm.tsx`) from both places.
 - **Printable report** `/students/[id]/report`: student info, attendance
   summary (counts, rate = (present + late) / saved days, list of non-present
   days), homework record, marks record (with average), uploaded-files list
@@ -158,6 +164,11 @@ migration before deploying code that needs it.**
   `{ success }` when the UI needs to show saved/error state; direct
   client-side Supabase calls for anything involving a file upload, then
   `router.refresh()`. All files go in the private `documents` bucket.
+- **Destructive/update actions must verify a row was affected.** Supabase
+  returns no error when RLS filters a row out, so `delete()`/`update()` that
+  matter chain `.select("id")` and report success only if rows came back (see
+  `homework/actions.ts`, `marks/actions.ts`, `deleteClass`). Deletes are hard
+  deletes (no soft-delete/trash).
 - Client state derived from props must be re-synced with `useEffect` (client
   navigation does not remount) — see `AttendanceClient.tsx`.
 - All strings go in `lib/i18n/strings.ts` (`ar` and `en`), read via `useLang()`.
@@ -169,6 +180,9 @@ migration before deploying code that needs it.**
 
 ## Change log
 
+- 2026-09-20 (late night): homework and marks entries can be edited (sidebar
+  tables and profile tabs); deletes now verify a row was really removed
+  instead of trusting "no error".
 - 2026-09-20 (night): Homework and Marks added as their own sidebar pages
   under Attendance (class-wide recording + recent entries); the profile tabs
   stay. Shared helpers moved to `lib/homework.ts` and `lib/grades.ts`.

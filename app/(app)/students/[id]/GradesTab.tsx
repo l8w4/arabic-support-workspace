@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, X, Trash2, Loader2 } from "lucide-react";
+import { Plus, X, Trash2, Loader2, Pencil } from "lucide-react";
 import { useLang } from "@/lib/i18n/context";
+import MarkEditForm from "@/components/MarkEditForm";
 import type { GradeEntry } from "@/lib/types";
 import { percentOf, averagePercent } from "@/lib/grades";
 import { addGradeEntry, deleteGradeEntry } from "../actions";
@@ -12,6 +13,7 @@ export default function GradesTab({ studentId, entries }: { studentId: string; e
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
   const average = averagePercent(entries);
 
   async function handleAdd(formData: FormData) {
@@ -129,7 +131,12 @@ export default function GradesTab({ studentId, entries }: { studentId: string; e
         <div className="text-sm text-slate-500">{t("noGradesYet")}</div>
       ) : (
         <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100">
-          {entries.map((g) => (
+          {entries.map((g) =>
+            editingId === g.id ? (
+              <div key={g.id} className="p-4">
+                <MarkEditForm entry={g} onDone={() => setEditingId(null)} />
+              </div>
+            ) : (
             <div key={g.id} className="p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -148,6 +155,14 @@ export default function GradesTab({ studentId, entries }: { studentId: string; e
                     </div>
                   </div>
                   <button
+                    onClick={() => setEditingId(g.id)}
+                    className="text-slate-300 hover:text-slate-700"
+                    aria-label={t("edit")}
+                    title={t("edit")}
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
                     onClick={() => handleDelete(g.id)}
                     className="text-slate-300 hover:text-red-600"
                     aria-label={t("deleteEntry")}
@@ -159,7 +174,8 @@ export default function GradesTab({ studentId, entries }: { studentId: string; e
               </div>
               {g.note && <p className="text-sm text-slate-600 mt-1.5 whitespace-pre-line">{g.note}</p>}
             </div>
-          ))}
+          )
+          )}
         </div>
       )}
     </div>

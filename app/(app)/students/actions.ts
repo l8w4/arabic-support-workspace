@@ -62,9 +62,10 @@ export async function updateStudent(id: string, formData: FormData) {
 
 export async function deleteHomeworkEntry(id: string, studentId: string) {
   const supabase = await createClient();
-  const { error } = await supabase.from("homework_entries").delete().eq("id", id);
+  const { data, error } = await supabase.from("homework_entries").delete().eq("id", id).select("id");
   revalidatePath(`/students/${studentId}`);
-  return { success: !error };
+  revalidatePath("/homework");
+  return { success: !error && (data?.length ?? 0) > 0 };
 }
 
 export async function addGradeEntry(studentId: string, formData: FormData) {
@@ -94,7 +95,8 @@ export async function addGradeEntry(studentId: string, formData: FormData) {
 
 export async function deleteGradeEntry(id: string, studentId: string) {
   const supabase = await createClient();
-  const { error } = await supabase.from("grade_entries").delete().eq("id", id);
+  const { data, error } = await supabase.from("grade_entries").delete().eq("id", id).select("id");
   revalidatePath(`/students/${studentId}`);
-  return { success: !error };
+  revalidatePath("/marks");
+  return { success: !error && (data?.length ?? 0) > 0 };
 }

@@ -48,9 +48,40 @@ export async function saveMarksForClass(formData: FormData) {
   return { success: !error, error: error?.message };
 }
 
+const NO_ROWS = "No rows were changed (you may not have permission to edit).";
+
+// Supabase reports no error when row-level security filters a row out, so
+// success is only claimed when at least one row was actually affected.
 export async function deleteMarkFromList(id: string) {
   const supabase = await createClient();
-  const { error } = await supabase.from("grade_entries").delete().eq("id", id);
+  const { data, error } = await supabase.from("grade_entries").delete().eq("id", id).select("id");
   revalidatePath("/marks");
-  return { success: !error };
+  revalidatePath("/students/[id]", "page");
+  const changed = (data?.length ?? 0) > 0;
+  return { success: !error && changed, error: error?.message ?? (changed ? undefined : NO_ROWS) };
+}
+
+export async function updateMarkEntry(id: string, formData: FormData) {
+  const supabase = await createClient();
+  const title = (formData.get("title") as string)?.trim();
+  const score = Number(formData.get("score"));
+  const maxScore = Number(formData.get("max_score") || 100);
+  if (!title || Number.isNaN(score) || Number.isNaN(maxScore)) return { success: false, error: undefined };
+
+  const { data, error } = await supabase
+    .from("grade_entries")
+    .update({
+      title,
+      score,
+      max_score: maxScore,
+      assessed_date: (formData.get("assessed_date") as string) || undefined,
+      note: (formData.get("note") as string)?.trim() || null,
+    })
+    .eq("id", id)
+    .select("id");
+
+  revalidatePath("/marks");
+  revalidatePath("/students/[id]", "page");
+  const changed = (data?.length ?? 0) > 0;
+  return { success: !error && changed, error: error?.message ?? (changed ? undefined : NO_ROWS) };
 }

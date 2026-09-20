@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Loader2, Trash2 } from "lucide-react";
+import { CheckCircle2, Loader2, Trash2, Pencil } from "lucide-react";
 import { useLang } from "@/lib/i18n/context";
+import MarkEditForm from "@/components/MarkEditForm";
 import { percentOf } from "@/lib/grades";
 import type { Class } from "@/lib/types";
 import { saveMarksForClass, deleteMarkFromList } from "./actions";
@@ -24,6 +25,8 @@ export default function MarksClient({
   const { t, lang } = useLang();
   const router = useRouter();
   const [formKey, setFormKey] = useState(0);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [listError, setListError] = useState("");
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [errorText, setErrorText] = useState("");
 
@@ -48,7 +51,9 @@ export default function MarksClient({
 
   async function handleDelete(id: string) {
     if (!window.confirm(t("confirmDeleteEntry"))) return;
-    await deleteMarkFromList(id);
+    setListError("");
+    const result = await deleteMarkFromList(id);
+    if (!result.success) setListError(result.error ?? t("saveError"));
   }
 
   const fmt = (d: string) => new Date(d).toLocaleDateString(lang === "ar" ? "ar-EG" : "en-GB");
@@ -158,6 +163,11 @@ export default function MarksClient({
       )}
 
       <div className="text-sm font-medium text-slate-800 mb-3">{t("recentEntries")}</div>
+      {listError && (
+        <div className="text-sm text-red-600 mb-3" dir="ltr">
+          {listError}
+        </div>
+      )}
       {entries.length === 0 ? (
         <div className="text-sm text-slate-500">{t("noGradesYet")}</div>
       ) : (
@@ -174,7 +184,14 @@ export default function MarksClient({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {entries.map((e) => (
+              {entries.map((e) =>
+                editingId === e.id ? (
+                  <tr key={e.id} className="bg-slate-50">
+                    <td colSpan={6} className="p-4">
+                      <MarkEditForm entry={e} onDone={() => setEditingId(null)} />
+                    </td>
+                  </tr>
+                ) : (
                 <tr key={e.id} className="align-top hover:bg-slate-50">
                   <td className="p-3 text-slate-600 whitespace-nowrap">{fmt(e.assessed_date)}</td>
                   <td className="p-3">
@@ -188,7 +205,15 @@ export default function MarksClient({
                     <span className="text-xs text-slate-400">({percentOf(e)}%)</span>
                   </td>
                   <td className="p-3 text-slate-500">{e.note ?? ""}</td>
-                  <td className="p-3">
+                  <td className="p-3 whitespace-nowrap">
+                    <button
+                      onClick={() => setEditingId(e.id)}
+                      className="text-slate-300 hover:text-slate-700 me-3"
+                      aria-label={t("edit")}
+                      title={t("edit")}
+                    >
+                      <Pencil size={14} />
+                    </button>
                     <button
                       onClick={() => handleDelete(e.id)}
                       className="text-slate-300 hover:text-red-600"
@@ -199,7 +224,8 @@ export default function MarksClient({
                     </button>
                   </td>
                 </tr>
-              ))}
+                )
+              )}
             </tbody>
           </table>
         </div>

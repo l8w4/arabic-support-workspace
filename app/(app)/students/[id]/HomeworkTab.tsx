@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, X, FileText, Trash2, Loader2 } from "lucide-react";
+import { Plus, X, FileText, Trash2, Loader2, Pencil } from "lucide-react";
 import { useLang } from "@/lib/i18n/context";
+import HomeworkEditForm from "@/components/HomeworkEditForm";
 import { createClient } from "@/lib/supabase/client";
 import type { HomeworkEntry } from "@/lib/types";
 import { HOMEWORK_STATUSES as STATUSES, HOMEWORK_STATUS_CLASS } from "@/lib/homework";
@@ -21,6 +22,7 @@ export default function HomeworkTab({
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   async function handleAdd(formData: FormData) {
     setError("");
@@ -178,7 +180,12 @@ export default function HomeworkTab({
         <div className="text-sm text-slate-500">{t("noHomeworkYet")}</div>
       ) : (
         <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100">
-          {entries.map((h) => (
+          {entries.map((h) =>
+            editingId === h.id ? (
+              <div key={h.id} className="p-4">
+                <HomeworkEditForm entry={h} onDone={() => setEditingId(null)} />
+              </div>
+            ) : (
             <div key={h.id} className="p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -191,6 +198,14 @@ export default function HomeworkTab({
                   <span className={`${HOMEWORK_STATUS_CLASS[h.status]} text-xs px-2.5 py-0.5 rounded-full font-medium`}>
                     {t(`hw_${h.status}` as any)}
                   </span>
+                  <button
+                    onClick={() => setEditingId(h.id)}
+                    className="text-slate-300 hover:text-slate-700"
+                    aria-label={t("edit")}
+                    title={t("edit")}
+                  >
+                    <Pencil size={14} />
+                  </button>
                   <button
                     onClick={() => handleDelete(h.id)}
                     className="text-slate-300 hover:text-red-600"
@@ -213,7 +228,8 @@ export default function HomeworkTab({
                 </a>
               )}
             </div>
-          ))}
+          )
+          )}
         </div>
       )}
     </div>

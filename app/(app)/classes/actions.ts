@@ -45,12 +45,12 @@ export async function deleteClass(id: string) {
   ];
   if (steps.some((s) => s.error)) return { success: false };
 
-  const { error } = await supabase.from("classes").delete().eq("id", id);
+  const { data, error } = await supabase.from("classes").delete().eq("id", id).select("id");
 
   revalidatePath("/classes");
   revalidatePath("/attendance");
   revalidatePath("/prep");
-  return { success: !error };
+  return { success: !error && (data?.length ?? 0) > 0 };
 }
 
 export async function setClassActive(id: string, isActive: boolean) {
