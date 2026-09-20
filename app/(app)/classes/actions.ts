@@ -18,6 +18,41 @@ export async function createClass(formData: FormData) {
   revalidatePath("/classes");
 }
 
+export async function updateClass(id: string, formData: FormData) {
+  const supabase = await createClient();
+  const name_ar = (formData.get("name_ar") as string)?.trim();
+  const academic_year = (formData.get("academic_year") as string)?.trim();
+  if (!name_ar || !academic_year) return { success: false };
+
+  const { error } = await supabase.from("classes").update({ name_ar, academic_year }).eq("id", id);
+
+  revalidatePath("/classes");
+  revalidatePath("/attendance");
+  revalidatePath("/prep");
+  return { success: !error };
+}
+
+// attendance, preps and documents reference classes without ON DELETE
+// CASCADE, so they are cleared here first (documents just lose the link).
+// Roster rows in class_students cascade automatically.
+export async function deleteClass(id: string) {
+  const supabase = await createClient();
+
+  const steps = [
+    await supabase.from("attendance").delete().eq("class_id", id),
+    await supabase.from("preps").delete().eq("class_id", id),
+    await supabase.from("documents").update({ class_id: null }).eq("class_id", id),
+  ];
+  if (steps.some((s) => s.error)) return { success: false };
+
+  const { error } = await supabase.from("classes").delete().eq("id", id);
+
+  revalidatePath("/classes");
+  revalidatePath("/attendance");
+  revalidatePath("/prep");
+  return { success: !error };
+}
+
 export async function setClassActive(id: string, isActive: boolean) {
   const supabase = await createClient();
   await supabase.from("classes").update({ is_active: isActive }).eq("id", id);

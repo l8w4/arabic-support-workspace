@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, X, Layers, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, X, Layers, ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
 import { useLang } from "@/lib/i18n/context";
 import type { Class, Student } from "@/lib/types";
-import { createClass, setClassActive, setClassMembership } from "./actions";
+import { createClass, updateClass, deleteClass, setClassActive, setClassMembership } from "./actions";
 
 export default function ClassesClient({
   classes,
@@ -18,6 +18,8 @@ export default function ClassesClient({
   const { t } = useLang();
   const [showForm, setShowForm] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
   const memberSet = useMemo(
     () => new Set(memberships.map((m) => `${m.class_id}:${m.student_id}`)),
@@ -28,6 +30,21 @@ export default function ClassesClient({
     createClass(formData);
     setShowForm(false);
   };
+
+  async function handleUpdate(id: string, formData: FormData) {
+    setError("");
+    const result = await updateClass(id, formData);
+    if (result.success) setEditingId(null);
+    else setError(t("classActionFailed"));
+  }
+
+  async function handleDelete(id: string) {
+    if (!window.confirm(t("confirmDeleteClass"))) return;
+    setError("");
+    const result = await deleteClass(id);
+    if (!result.success) setError(t("classActionFailed"));
+    else if (expanded === id) setExpanded(null);
+  }
 
   return (
     <div>
@@ -76,14 +93,51 @@ export default function ClassesClient({
         </form>
       )}
 
+      {error && <div className="text-sm text-red-600 mb-3">{error}</div>}
+
       {classes.length === 0 ? (
         <div className="text-sm text-slate-500">{t("noClassesYet")}</div>
       ) : (
-        <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 max-w-md">
+        <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 max-w-lg">
           {classes.map((c) => {
             const isExpanded = expanded === c.id;
             return (
               <div key={c.id}>
+                {editingId === c.id ? (
+                  <form
+                    action={(fd) => handleUpdate(c.id, fd)}
+                    className="p-4 flex items-end gap-2 flex-wrap text-sm"
+                  >
+                    <div className="flex-1 min-w-[140px]">
+                      <label className="block text-xs text-slate-500 mb-1">{t("className")}</label>
+                      <input
+                        name="name_ar"
+                        required
+                        defaultValue={c.name_ar}
+                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      />
+                    </div>
+                    <div className="w-32">
+                      <label className="block text-xs text-slate-500 mb-1">{t("academicYear")}</label>
+                      <input
+                        name="academic_year"
+                        required
+                        defaultValue={c.academic_year}
+                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      />
+                    </div>
+                    <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg">
+                      {t("save")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingId(null)}
+                      className="text-sm text-slate-500 hover:text-slate-700 px-2 py-2"
+                    >
+                      {t("cancel")}
+                    </button>
+                  </form>
+                ) : (
                 <div className="p-4 flex items-center justify-between text-sm">
                   <button
                     onClick={() => setExpanded(isExpanded ? null : c.id)}
@@ -97,6 +151,22 @@ export default function ClassesClient({
                   </button>
                   <div className="flex items-center gap-3 shrink-0">
                     <button
+                      onClick={() => setEditingId(c.id)}
+                      className="text-slate-400 hover:text-slate-700"
+                      aria-label={t("edit")}
+                      title={t("edit")}
+                    >
+                      <Pencil size={15} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(c.id)}
+                      className="text-slate-400 hover:text-red-600"
+                      aria-label={t("deleteClass")}
+                      title={t("deleteClass")}
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                    <button
                       onClick={() => setClassActive(c.id, !c.is_active)}
                       className="text-xs text-slate-500 hover:text-slate-700 border border-slate-200 rounded-full px-2.5 py-1"
                     >
@@ -107,6 +177,7 @@ export default function ClassesClient({
                     </button>
                   </div>
                 </div>
+                )}
 
                 {isExpanded && (
                   <div className="bg-slate-50 px-4 pb-4">
