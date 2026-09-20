@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, EyeOff, GraduationCap } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { LangProvider, useLang } from "@/lib/i18n/context";
 import { login } from "./actions";
 
@@ -21,9 +21,7 @@ function LoginForm({ hasError }: { hasError: boolean }) {
 
       <form action={login} className="bg-white shadow-sm border border-slate-200 rounded-xl p-8 w-full max-w-sm">
         <div className="flex flex-col items-center text-center mb-6">
-          <div className="w-14 h-14 rounded-xl bg-slate-900 text-white flex items-center justify-center mb-3">
-            <GraduationCap size={26} />
-          </div>
+          <img src="/logo.jpg" alt="We Care Support Centre" className="w-28 h-28 object-contain mb-2" />
           <div className="font-semibold text-lg text-slate-900">{t("appName")}</div>
           <div className="text-xs text-slate-500 mt-1">{t("appNameSub")}</div>
         </div>

@@ -12,7 +12,6 @@ import {
   Layers,
   LogOut,
   Languages,
-  GraduationCap,
 } from "lucide-react";
 import { LangProvider, useLang } from "@/lib/i18n/context";
 import { logout } from "@/app/login/actions";
@@ -39,11 +38,13 @@ function ShellInner({ profile, children }: { profile: Profile; children: React.R
     <div className="flex min-h-screen bg-slate-50">
       <aside className="w-64 bg-white border-e border-slate-200 flex flex-col shrink-0">
         <div className="p-5 border-b border-slate-200">
-          <div className="flex items-center gap-2 mb-1">
-            <GraduationCap className="text-blue-600" size={22} />
-            <span className="font-semibold text-slate-900 text-sm leading-tight">{t("appName")}</span>
+          <div className="flex items-center gap-3 mb-3">
+            <img src="/logo.jpg" alt="We Care Support Centre" className="w-16 h-16 object-contain shrink-0" />
+            <div>
+              <div className="font-semibold text-slate-900 text-sm leading-tight">{t("appName")}</div>
+              <div className="text-[11px] text-slate-400 mt-0.5">{t("appNameSub")}</div>
+            </div>
           </div>
-          <div className="text-[11px] text-slate-400 mb-3">{t("appNameSub")}</div>
           <button
             type="button"
             onClick={toggleLang}
