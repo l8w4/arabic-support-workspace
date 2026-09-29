@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Loader2, Trash2, Pencil } from "lucide-react";
 import { useLang } from "@/lib/i18n/context";
+import { useCanEdit } from "@/lib/access/context";
 import MarkEditForm from "@/components/MarkEditForm";
 import { percentOf } from "@/lib/grades";
 import type { Class } from "@/lib/types";
@@ -24,6 +25,7 @@ export default function MarksClient({
 }) {
   const { t, lang } = useLang();
   const router = useRouter();
+  const canEdit = useCanEdit();
   const [formKey, setFormKey] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [listError, setListError] = useState("");
@@ -76,7 +78,7 @@ export default function MarksClient({
         </select>
       </div>
 
-      {!classId ? (
+      {!canEdit ? null : !classId ? (
         <div className="text-sm text-slate-500 mb-6">{t("pickClassToRecord")}</div>
       ) : roster.length === 0 ? (
         <div className="text-sm text-slate-500 mb-6">{t("noStudentsInClass")}</div>
@@ -206,22 +208,26 @@ export default function MarksClient({
                   </td>
                   <td className="p-3 text-slate-500">{e.note ?? ""}</td>
                   <td className="p-3 whitespace-nowrap">
-                    <button
-                      onClick={() => setEditingId(e.id)}
-                      className="text-slate-300 hover:text-slate-700 me-3"
-                      aria-label={t("edit")}
-                      title={t("edit")}
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(e.id)}
-                      className="text-slate-300 hover:text-red-600"
-                      aria-label={t("deleteEntry")}
-                      title={t("deleteEntry")}
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    {canEdit && (
+                      <button
+                        onClick={() => setEditingId(e.id)}
+                        className="text-slate-300 hover:text-slate-700 me-3"
+                        aria-label={t("edit")}
+                        title={t("edit")}
+                      >
+                        <Pencil size={14} />
+                      </button>
+                    )}
+                    {canEdit && (
+                      <button
+                        onClick={() => handleDelete(e.id)}
+                        className="text-slate-300 hover:text-red-600"
+                        aria-label={t("deleteEntry")}
+                        title={t("deleteEntry")}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                   </td>
                 </tr>
                 )

@@ -16,7 +16,9 @@ import {
   Languages,
 } from "lucide-react";
 import { LangProvider, useLang } from "@/lib/i18n/context";
+import { AccessProvider } from "@/lib/access/context";
 import { logout } from "@/app/login/actions";
+import { canEdit } from "@/lib/access/role";
 import type { Profile } from "@/lib/auth";
 
 function ShellInner({ profile, children }: { profile: Profile; children: React.ReactNode }) {
@@ -77,9 +79,12 @@ function ShellInner({ profile, children }: { profile: Profile; children: React.R
         </nav>
 
         <div className="p-3 border-t border-slate-200">
-          <div className="text-xs text-slate-500 mb-2 px-1">
+          <div className="text-xs text-slate-500 mb-1 px-1">
             {displayName} <span className="text-slate-300">·</span> {roleLabel}
           </div>
+          {profile.role === "viewer" && (
+            <div className="text-[11px] text-amber-600 mb-2 px-1">{t("viewerNoAccess")}</div>
+          )}
           <form action={logout}>
             <button
               type="submit"
@@ -98,8 +103,10 @@ function ShellInner({ profile, children }: { profile: Profile; children: React.R
 
 export default function Shell({ profile, children }: { profile: Profile; children: React.ReactNode }) {
   return (
-    <LangProvider>
-      <ShellInner profile={profile}>{children}</ShellInner>
-    </LangProvider>
+    <AccessProvider canEdit={canEdit(profile.role)}>
+      <LangProvider>
+        <ShellInner profile={profile}>{children}</ShellInner>
+      </LangProvider>
+    </AccessProvider>
   );
 }

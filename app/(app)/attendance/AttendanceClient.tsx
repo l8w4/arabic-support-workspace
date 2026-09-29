@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, XCircle, FileCheck2, Footprints, Clock3, Download, CheckCheck, Loader2 } from "lucide-react";
 import { useLang } from "@/lib/i18n/context";
+import { useCanEdit } from "@/lib/access/context";
 import type { AttendanceRow, AttendanceStatus, Class, Student } from "@/lib/types";
 import { saveAttendance } from "./actions";
 
@@ -59,6 +60,7 @@ export default function AttendanceClient({
 }) {
   const { t, lang } = useLang();
   const router = useRouter();
+  const canEdit = useCanEdit();
 
   const [statuses, setStatuses] = useState<Record<string, AttendanceStatus>>(() => buildInitialStatuses(roster, existing));
   const [notes, setNotes] = useState<Record<string, string>>(() => buildInitialNotes(roster, existing));
@@ -186,13 +188,15 @@ export default function AttendanceClient({
                 month: "long",
               })}
             </div>
-            <button
-              type="button"
-              onClick={markAllPresent}
-              className="flex items-center gap-1.5 text-xs text-blue-700 hover:bg-blue-50 border border-blue-200 px-2.5 py-1.5 rounded-full"
-            >
-              <CheckCheck size={13} /> {t("markAllPresent")}
-            </button>
+            {canEdit && (
+              <button
+                type="button"
+                onClick={markAllPresent}
+                className="flex items-center gap-1.5 text-xs text-blue-700 hover:bg-blue-50 border border-blue-200 px-2.5 py-1.5 rounded-full"
+              >
+                <CheckCheck size={13} /> {t("markAllPresent")}
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-3 flex-wrap mb-3 text-xs text-slate-500">
@@ -214,55 +218,68 @@ export default function AttendanceClient({
                   style={{ borderInlineStartColor: STATUS_BORDER_COLORS[current] }}
                 >
                   <div className="text-sm text-slate-800 font-medium min-w-[110px]">{s.name_ar}</div>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {STATUSES.map((st) => {
-                      const Icon = STATUS_ICONS[st];
-                      const active = current === st;
-                      return (
-                        <button
-                          key={st}
-                          type="button"
-                          onClick={() => setStatuses((prev) => ({ ...prev, [s.id]: st }))}
-                          className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full border transition-colors ${
-                            active
-                              ? `status-${st} border-transparent font-medium ring-2 ring-offset-1 ring-current`
-                              : "border-slate-200 text-slate-400 hover:bg-slate-50"
-                          }`}
-                        >
-                          <Icon size={13} /> {t(`status_${st}` as any)}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <input
-                    value={notes[s.id] ?? ""}
-                    onChange={(e) => setNotes((prev) => ({ ...prev, [s.id]: e.target.value }))}
-                    placeholder={t("optionalNote")}
-                    className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 w-40 focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white"
-                  />
-                  <input type="hidden" name={`status_${s.id}`} value={current} />
-                  <input type="hidden" name={`note_${s.id}`} value={notes[s.id] ?? ""} />
+                  {canEdit ? (
+                    <>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {STATUSES.map((st) => {
+                          const Icon = STATUS_ICONS[st];
+                          const active = current === st;
+                          return (
+                            <button
+                              key={st}
+                              type="button"
+                              onClick={() => setStatuses((prev) => ({ ...prev, [s.id]: st }))}
+                              className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full border transition-colors ${
+                                active
+                                  ? `status-${st} border-transparent font-medium ring-2 ring-offset-1 ring-current`
+                                  : "border-slate-200 text-slate-400 hover:bg-slate-50"
+                              }`}
+                            >
+                              <Icon size={13} /> {t(`status_${st}` as any)}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <input
+                        value={notes[s.id] ?? ""}
+                        onChange={(e) => setNotes((prev) => ({ ...prev, [s.id]: e.target.value }))}
+                        placeholder={t("optionalNote")}
+                        className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 w-40 focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white"
+                      />
+                      <input type="hidden" name={`status_${s.id}`} value={current} />
+                      <input type="hidden" name={`note_${s.id}`} value={notes[s.id] ?? ""} />
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <span className={`status-${current} text-xs px-2.5 py-1.5 rounded-full font-medium`}>
+                        {t(`status_${current}` as any)}
+                      </span>
+                      {notes[s.id] && <span className="text-xs text-slate-500">{notes[s.id]}</span>}
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
 
-          <div className="mt-4 flex items-center gap-3">
-            <button
-              type="submit"
-              disabled={saveState === "saving"}
-              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm px-5 py-2 rounded-lg"
-            >
-              {saveState === "saving" && <Loader2 size={14} className="animate-spin" />}
-              {t("saveAttendance")}
-            </button>
-            {saveState === "saved" && (
-              <span className="flex items-center gap-1 text-sm text-green-700">
-                <CheckCircle2 size={15} /> {t("savedConfirm")}
-              </span>
-            )}
-            {saveState === "error" && <span className="text-sm text-red-600">{t("saveError")}</span>}
-          </div>
+          {canEdit && (
+            <div className="mt-4 flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={saveState === "saving"}
+                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm px-5 py-2 rounded-lg"
+              >
+                {saveState === "saving" && <Loader2 size={14} className="animate-spin" />}
+                {t("saveAttendance")}
+              </button>
+              {saveState === "saved" && (
+                <span className="flex items-center gap-1 text-sm text-green-700">
+                  <CheckCircle2 size={15} /> {t("savedConfirm")}
+                </span>
+              )}
+              {saveState === "error" && <span className="text-sm text-red-600">{t("saveError")}</span>}
+            </div>
+          )}
         </form>
       )}
     </div>

@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, FileText, X, Search } from "lucide-react";
+import { Upload, FileText, X, Search, Pencil, Trash2 } from "lucide-react";
 import { useLang } from "@/lib/i18n/context";
+import { useCanEdit } from "@/lib/access/context";
 import { createClient } from "@/lib/supabase/client";
 import type { Prep, Class } from "@/lib/types";
+import { updatePrep, deletePrep } from "./actions";
 
 function displayFileName(path: string) {
   const base = path.split("/").pop() ?? path;
@@ -21,7 +23,10 @@ export default function PrepClient({
 }) {
   const { t, lang } = useLang();
   const router = useRouter();
+  const canEdit = useCanEdit();
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [listError, setListError] = useState("");
   const [classFilter, setClassFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -84,6 +89,20 @@ export default function PrepClient({
     router.refresh();
   }
 
+  async function handleUpdate(id: string, formData: FormData) {
+    setListError("");
+    const result = await updatePrep(id, formData);
+    if (result.success) setEditingId(null);
+    else setListError(result.error ?? t("saveError"));
+  }
+
+  async function handleDelete(id: string, documentPath: string | null) {
+    if (!window.confirm(t("confirmDeleteEntry"))) return;
+    setListError("");
+    const result = await deletePrep(id, documentPath);
+    if (!result.success) setListError(result.error ?? t("saveError"));
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
@@ -110,16 +129,18 @@ export default function PrepClient({
               </option>
             ))}
           </select>
-          <button
-            onClick={() => setShowForm((v) => !v)}
-            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm px-3.5 py-2 rounded-lg"
-          >
-            <Upload size={16} /> {t("addPrep")}
-          </button>
+          {canEdit && (
+            <button
+              onClick={() => setShowForm((v) => !v)}
+              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm px-3.5 py-2 rounded-lg"
+            >
+              <Upload size={16} /> {t("addPrep")}
+            </button>
+          )}
         </div>
       </div>
 
-      {showForm && (
+      {canEdit && showForm && (
         <form
           action={handleUpload}
           className="bg-white border border-slate-200 rounded-xl p-5 mb-6 flex flex-col gap-4 max-w-lg relative"
@@ -200,32 +221,138 @@ export default function PrepClient({
         </form>
       )}
 
+      {listError && (
+        <div className="text-sm text-red-600 mb-3" dir="ltr">
+          {listError}
+        </div>
+      )}
+
       {filtered.length === 0 ? (
         <div className="text-sm text-slate-500">{t("noPrepYet")}</div>
       ) : (
         <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100">
-          {filtered.map((p) => (
-            <div key={p.id} className="p-4 flex items-center justify-between text-sm flex-wrap gap-2">
-              <div className="flex items-center gap-2.5">
-                <FileText size={16} className="text-slate-400 shrink-0" />
-                <div>
-                  <div className="text-slate-800">
-                    {p.lesson_title || p.unit || displayFileName(p.document_path ?? "")}
+          {filtered.map((p) =>
+            editingId === p.id ? (
+              <form
+                key={p.id}
+                action={(fd) => handleUpdate(p.id, fd)}
+                className="p-4 flex flex-col gap-3 text-sm bg-slate-50"
+              >
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1">{t("forClass")}</label>
+                    <select
+                      name="class_id"
+                      required
+                      defaultValue={p.class_id}
+                      className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    >
+                      {classes.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name_ar}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <div className="text-xs text-slate-400">
-                    {p.classes?.name_ar ?? "—"} ·{" "}
-                    {new Date(p.week_start).toLocaleDateString(lang === "ar" ? "ar-EG" : "en-GB")} –{" "}
-                    {new Date(p.week_end).toLocaleDateString(lang === "ar" ? "ar-EG" : "en-GB")}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs text-slate-500 mb-1">{t("weekStart")}</label>
+                      <input
+                        name="week_start"
+                        type="date"
+                        required
+                        defaultValue={p.week_start}
+                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-500 mb-1">{t("weekEnd")}</label>
+                      <input
+                        name="week_end"
+                        type="date"
+                        required
+                        defaultValue={p.week_end}
+                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      />
+                    </div>
                   </div>
                 </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1">{t("unit")}</label>
+                    <input
+                      name="unit"
+                      defaultValue={p.unit ?? ""}
+                      className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1">{t("lessonTitle")}</label>
+                    <input
+                      name="lesson_title"
+                      defaultValue={p.lesson_title ?? ""}
+                      className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg">
+                    {t("save")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingId(null)}
+                    className="text-sm text-slate-500 hover:text-slate-700 px-2 py-2"
+                  >
+                    {t("cancel")}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div key={p.id} className="p-4 flex items-center justify-between text-sm flex-wrap gap-2">
+                <div className="flex items-center gap-2.5">
+                  <FileText size={16} className="text-slate-400 shrink-0" />
+                  <div>
+                    <div className="text-slate-800">
+                      {p.lesson_title || p.unit || displayFileName(p.document_path ?? "")}
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      {p.classes?.name_ar ?? "—"} ·{" "}
+                      {new Date(p.week_start).toLocaleDateString(lang === "ar" ? "ar-EG" : "en-GB")} –{" "}
+                      {new Date(p.week_end).toLocaleDateString(lang === "ar" ? "ar-EG" : "en-GB")}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {p.signedUrl && (
+                    <a href={p.signedUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline text-sm">
+                      {t("download")}
+                    </a>
+                  )}
+                  {canEdit && (
+                    <>
+                      <button
+                        onClick={() => setEditingId(p.id)}
+                        className="text-slate-300 hover:text-slate-700"
+                        aria-label={t("edit")}
+                        title={t("edit")}
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(p.id, p.document_path)}
+                        className="text-slate-300 hover:text-red-600"
+                        aria-label={t("deleteEntry")}
+                        title={t("deleteEntry")}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
-              {p.signedUrl && (
-                <a href={p.signedUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline text-sm">
-                  {t("download")}
-                </a>
-              )}
-            </div>
-          ))}
+            )
+          )}
         </div>
       )}
     </div>

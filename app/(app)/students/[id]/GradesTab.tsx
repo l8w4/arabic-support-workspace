@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus, X, Trash2, Loader2, Pencil } from "lucide-react";
 import { useLang } from "@/lib/i18n/context";
+import { useCanEdit } from "@/lib/access/context";
 import MarkEditForm from "@/components/MarkEditForm";
 import type { GradeEntry } from "@/lib/types";
 import { percentOf, averagePercent } from "@/lib/grades";
@@ -10,6 +11,7 @@ import { addGradeEntry, deleteGradeEntry } from "../actions";
 
 export default function GradesTab({ studentId, entries }: { studentId: string; entries: GradeEntry[] }) {
   const { t, lang } = useLang();
+  const canEdit = useCanEdit();
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -34,12 +36,14 @@ export default function GradesTab({ studentId, entries }: { studentId: string; e
   return (
     <div className="max-w-2xl">
       <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-        <button
-          onClick={() => setShowForm((v) => !v)}
-          className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm px-3.5 py-2 rounded-lg"
-        >
-          <Plus size={16} /> {t("addGrade")}
-        </button>
+        {canEdit && (
+          <button
+            onClick={() => setShowForm((v) => !v)}
+            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm px-3.5 py-2 rounded-lg"
+          >
+            <Plus size={16} /> {t("addGrade")}
+          </button>
+        )}
         {average !== null && (
           <div className="text-sm text-slate-600">
             {t("assessmentsCount")}: <strong>{entries.length}</strong> · {t("averageMark")}: <strong>{average}%</strong>
@@ -47,7 +51,7 @@ export default function GradesTab({ studentId, entries }: { studentId: string; e
         )}
       </div>
 
-      {showForm && (
+      {canEdit && showForm && (
         <form
           action={handleAdd}
           className="bg-white border border-slate-200 rounded-xl p-5 mb-5 flex flex-col gap-4 relative"
@@ -154,22 +158,26 @@ export default function GradesTab({ studentId, entries }: { studentId: string; e
                       {percentOf(g)}%
                     </div>
                   </div>
-                  <button
-                    onClick={() => setEditingId(g.id)}
-                    className="text-slate-300 hover:text-slate-700"
-                    aria-label={t("edit")}
-                    title={t("edit")}
-                  >
-                    <Pencil size={14} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(g.id)}
-                    className="text-slate-300 hover:text-red-600"
-                    aria-label={t("deleteEntry")}
-                    title={t("deleteEntry")}
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  {canEdit && (
+                    <>
+                      <button
+                        onClick={() => setEditingId(g.id)}
+                        className="text-slate-300 hover:text-slate-700"
+                        aria-label={t("edit")}
+                        title={t("edit")}
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(g.id)}
+                        className="text-slate-300 hover:text-red-600"
+                        aria-label={t("deleteEntry")}
+                        title={t("deleteEntry")}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
               {g.note && <p className="text-sm text-slate-600 mt-1.5 whitespace-pre-line">{g.note}</p>}

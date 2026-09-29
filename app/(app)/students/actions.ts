@@ -37,8 +37,47 @@ export async function createStudent(formData: FormData) {
     redirect(`/students/new?error=${encodeURIComponent(error?.message ?? "1")}`);
   }
 
+  const classId = formData.get("class_id") as string | null;
+  if (classId) {
+    await supabase.from("class_students").insert({ class_id: classId, student_id: data.id });
+  }
+
   revalidatePath("/students");
+  revalidatePath("/classes");
   redirect(`/students/${data.id}`);
+}
+
+// attendance and documents reference students without ON DELETE CASCADE, so
+// they are cleared here first (documents' storage files removed too, since a
+// student's own worksheets/photos are meaningless once they're gone).
+// plans/plan_reviews, homework_entries, grade_entries and class_students all
+// cascade automatically.
+export async function deleteStudent(id: string) {
+  const supabase = await createClient();
+
+  const [{ data: student }, { data: docs }] = await Promise.all([
+    supabase.from("students").select("photo_path").eq("id", id).single(),
+    supabase.from("documents").select("file_path").eq("student_id", id),
+  ]);
+
+  const paths = [
+    ...(student?.photo_path ? [student.photo_path] : []),
+    ...((docs ?? []).map((d) => d.file_path)),
+  ];
+  if (paths.length > 0) {
+    await supabase.storage.from("documents").remove(paths);
+  }
+
+  const steps = [
+    await supabase.from("documents").delete().eq("student_id", id),
+    await supabase.from("attendance").delete().eq("student_id", id),
+  ];
+  if (steps.some((s) => s.error)) return { success: false, error: undefined };
+
+  const { data, error } = await supabase.from("students").delete().eq("id", id).select("id");
+  revalidatePath("/students");
+  revalidatePath("/classes");
+  return { success: !error && (data?.length ?? 0) > 0, error: error?.message };
 }
 
 export async function updateStudent(id: string, formData: FormData) {

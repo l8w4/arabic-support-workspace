@@ -3,14 +3,16 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ArrowLeft, Pencil, FileText, User, Upload, Printer } from "lucide-react";
+import { ArrowRight, ArrowLeft, Pencil, FileText, User, Upload, Printer, Trash2 } from "lucide-react";
 import { useLang } from "@/lib/i18n/context";
+import { useCanEdit } from "@/lib/access/context";
 import { createClient } from "@/lib/supabase/client";
 import StudentForm from "@/components/StudentForm";
 import HomeworkTab from "./HomeworkTab";
 import GradesTab from "./GradesTab";
 import type { Student, DocumentRow, HomeworkEntry, GradeEntry } from "@/lib/types";
-import { updateStudent } from "../actions";
+import { updateStudent, deleteStudent } from "../actions";
+import { deleteDocument } from "../../files/actions";
 
 export default function StudentProfileClient({
   student,
@@ -27,6 +29,7 @@ export default function StudentProfileClient({
 }) {
   const { t, lang } = useLang();
   const router = useRouter();
+  const canEdit = useCanEdit();
   const [tab, setTab] = useState<"info" | "homework" | "grades" | "files">("info");
   const [editing, setEditing] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -57,6 +60,19 @@ export default function StudentProfileClient({
     setUploadingPhoto(false);
   }
 
+  async function handleDeleteStudent() {
+    if (!window.confirm(t("confirmDeleteStudent"))) return;
+    const result = await deleteStudent(student.id);
+    if (result.success) router.push("/students");
+    else setSaveError(result.error ?? t("saveError"));
+  }
+
+  async function handleDeleteDocument(id: string, filePath: string) {
+    if (!window.confirm(t("confirmDeleteEntry"))) return;
+    await deleteDocument(id, filePath);
+    router.refresh();
+  }
+
   return (
     <div>
       <Link href="/students" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-4">
@@ -73,10 +89,12 @@ export default function StudentProfileClient({
                 <User size={26} />
               </div>
             )}
-            <label className="absolute -bottom-1 -end-1 bg-slate-900 text-white rounded-full p-1.5 cursor-pointer hover:bg-slate-700">
-              <Upload size={11} />
-              <input type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} disabled={uploadingPhoto} />
-            </label>
+            {canEdit && (
+              <label className="absolute -bottom-1 -end-1 bg-slate-900 text-white rounded-full p-1.5 cursor-pointer hover:bg-slate-700">
+                <Upload size={11} />
+                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} disabled={uploadingPhoto} />
+              </label>
+            )}
           </div>
           <div>
             <h1 className="text-xl font-semibold text-slate-900">
@@ -94,13 +112,21 @@ export default function StudentProfileClient({
           >
             <Printer size={14} /> {t("printReport")}
           </Link>
-          {tab === "info" && !editing && (
-            <button
-              onClick={() => setEditing(true)}
-              className="flex items-center gap-1.5 text-sm bg-slate-900 text-white px-3.5 py-2 rounded-lg"
-            >
-              <Pencil size={14} /> {t("edit")}
-            </button>
+          {tab === "info" && !editing && canEdit && (
+            <>
+              <button
+                onClick={() => setEditing(true)}
+                className="flex items-center gap-1.5 text-sm bg-slate-900 text-white px-3.5 py-2 rounded-lg"
+              >
+                <Pencil size={14} /> {t("edit")}
+              </button>
+              <button
+                onClick={handleDeleteStudent}
+                className="flex items-center gap-1.5 text-sm border border-red-200 text-red-600 hover:bg-red-50 px-3.5 py-2 rounded-lg"
+              >
+                <Trash2 size={14} /> {t("deleteStudent")}
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -168,11 +194,23 @@ export default function StudentProfileClient({
                   </div>
                 </div>
               </div>
-              {d.signedUrl && (
-                <a href={d.signedUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
-                  {t("download")}
-                </a>
-              )}
+              <div className="flex items-center gap-3">
+                {d.signedUrl && (
+                  <a href={d.signedUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
+                    {t("download")}
+                  </a>
+                )}
+                {canEdit && (
+                  <button
+                    onClick={() => handleDeleteDocument(d.id, d.file_path)}
+                    className="text-slate-300 hover:text-red-600"
+                    aria-label={t("deleteEntry")}
+                    title={t("deleteEntry")}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>

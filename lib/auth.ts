@@ -1,14 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import type { Profile } from "@/lib/access/role";
 
-export type Profile = {
-  id: string;
-  full_name_ar: string;
-  full_name_en: string | null;
-  title: string | null;
-  role: "admin" | "teacher" | "viewer";
-  is_active: boolean;
-};
+export type { Profile };
 
 // Call at the top of any protected Server Component/layout.
 // Middleware already redirects signed-out visitors to /login, so
@@ -37,6 +31,3 @@ export async function requireProfile(): Promise<Profile> {
   return profile as Profile;
 }
 
-export function canEdit(role: Profile["role"]) {
-  return role === "admin" || role === "teacher";
-}

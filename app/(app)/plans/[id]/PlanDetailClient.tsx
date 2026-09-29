@@ -3,13 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ArrowLeft, Pencil, FileText, Upload } from "lucide-react";
+import { ArrowRight, ArrowLeft, Pencil, FileText, Upload, Trash2 } from "lucide-react";
 import { useLang } from "@/lib/i18n/context";
+import { useCanEdit } from "@/lib/access/context";
 import { createClient } from "@/lib/supabase/client";
 import PlanForm from "@/components/PlanForm";
 import ProgressBadge from "@/components/ProgressBadge";
 import type { Plan, PlanReview, ProgressRating } from "@/lib/types";
-import { updatePlan, addPlanReview } from "../actions";
+import { updatePlan, addPlanReview, deletePlan } from "../actions";
 
 const RATINGS: ProgressRating[] = ["great", "noticeable", "slight", "none"];
 
@@ -24,6 +25,7 @@ export default function PlanDetailClient({
 }) {
   const { t, lang } = useLang();
   const router = useRouter();
+  const canEdit = useCanEdit();
   const [tab, setTab] = useState<"info" | "reviews">("info");
   const [editing, setEditing] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
@@ -40,6 +42,13 @@ export default function PlanDetailClient({
     addPlanReview(plan.id, formData);
     setShowReviewForm(false);
   };
+
+  async function handleDelete() {
+    if (!window.confirm(t("confirmDeletePlan"))) return;
+    const result = await deletePlan(plan.id);
+    if (result.success) router.push("/plans");
+    else setError(result.error ?? t("saveError"));
+  }
 
   async function handleDocumentUpload(formData: FormData) {
     setError("");
@@ -79,13 +88,21 @@ export default function PlanDetailClient({
           <h1 className="text-xl font-semibold text-slate-900">{plan.students?.name_ar ?? "—"}</h1>
           <div className="text-xs text-slate-400">{plan.term || "—"}</div>
         </div>
-        {tab === "info" && !editing && (
-          <button
-            onClick={() => setEditing(true)}
-            className="flex items-center gap-1.5 text-sm bg-slate-900 text-white px-3.5 py-2 rounded-lg"
-          >
-            <Pencil size={14} /> {t("edit")}
-          </button>
+        {tab === "info" && !editing && canEdit && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setEditing(true)}
+              className="flex items-center gap-1.5 text-sm bg-slate-900 text-white px-3.5 py-2 rounded-lg"
+            >
+              <Pencil size={14} /> {t("edit")}
+            </button>
+            <button
+              onClick={handleDelete}
+              className="flex items-center gap-1.5 text-sm border border-red-200 text-red-600 hover:bg-red-50 px-3.5 py-2 rounded-lg"
+            >
+              <Trash2 size={14} /> {t("deletePlan")}
+            </button>
+          </div>
         )}
       </div>
 
@@ -149,16 +166,18 @@ export default function PlanDetailClient({
               ) : (
                 <div className="text-sm text-slate-500 mb-3">{t("noDocument")}</div>
               )}
-              <form action={handleDocumentUpload} className="flex items-center gap-2 mt-3">
-                <input name="file" type="file" required className="text-sm" />
-                <button
-                  type="submit"
-                  disabled={uploading}
-                  className="flex items-center gap-1.5 bg-slate-900 disabled:opacity-60 text-white text-xs px-3 py-1.5 rounded-lg"
-                >
-                  <Upload size={13} /> {uploading ? "..." : t("uploadFile")}
-                </button>
-              </form>
+              {canEdit && (
+                <form action={handleDocumentUpload} className="flex items-center gap-2 mt-3">
+                  <input name="file" type="file" required className="text-sm" />
+                  <button
+                    type="submit"
+                    disabled={uploading}
+                    className="flex items-center gap-1.5 bg-slate-900 disabled:opacity-60 text-white text-xs px-3 py-1.5 rounded-lg"
+                  >
+                    <Upload size={13} /> {uploading ? "..." : t("uploadFile")}
+                  </button>
+                </form>
+              )}
               {error && <div className="text-sm text-red-600 mt-2">{error}</div>}
             </div>
           </div>
@@ -166,14 +185,16 @@ export default function PlanDetailClient({
 
       {tab === "reviews" && (
         <div className="max-w-lg">
-          <button
-            onClick={() => setShowReviewForm((v) => !v)}
-            className="mb-4 bg-blue-600 hover:bg-blue-700 text-white text-sm px-3.5 py-2 rounded-lg"
-          >
-            {t("recordReview")}
-          </button>
+          {canEdit && (
+            <button
+              onClick={() => setShowReviewForm((v) => !v)}
+              className="mb-4 bg-blue-600 hover:bg-blue-700 text-white text-sm px-3.5 py-2 rounded-lg"
+            >
+              {t("recordReview")}
+            </button>
+          )}
 
-          {showReviewForm && (
+          {canEdit && showReviewForm && (
             <form
               action={boundReview}
               className="bg-white border border-slate-200 rounded-xl p-5 mb-5 flex flex-col gap-4"

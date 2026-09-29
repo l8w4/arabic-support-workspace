@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Plus, X, Layers, ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
 import { useLang } from "@/lib/i18n/context";
+import { useCanEdit } from "@/lib/access/context";
 import type { Class, Student } from "@/lib/types";
 import { createClass, updateClass, deleteClass, setClassActive, setClassMembership } from "./actions";
 
@@ -16,6 +17,7 @@ export default function ClassesClient({
   memberships: { class_id: string; student_id: string }[];
 }) {
   const { t } = useLang();
+  const canEdit = useCanEdit();
   const [showForm, setShowForm] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -50,15 +52,17 @@ export default function ClassesClient({
     <div>
       <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
         <h1 className="text-xl font-semibold text-slate-900">{t("classes")}</h1>
-        <button
-          onClick={() => setShowForm((v) => !v)}
-          className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm px-3.5 py-2 rounded-lg"
-        >
-          <Plus size={16} /> {t("addClass")}
-        </button>
+        {canEdit && (
+          <button
+            onClick={() => setShowForm((v) => !v)}
+            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm px-3.5 py-2 rounded-lg"
+          >
+            <Plus size={16} /> {t("addClass")}
+          </button>
+        )}
       </div>
 
-      {showForm && (
+      {canEdit && showForm && (
         <form
           action={handleCreate}
           className="bg-white border border-slate-200 rounded-xl p-5 mb-6 flex flex-col gap-4 max-w-md relative"
@@ -103,7 +107,7 @@ export default function ClassesClient({
             const isExpanded = expanded === c.id;
             return (
               <div key={c.id}>
-                {editingId === c.id ? (
+                {canEdit && editingId === c.id ? (
                   <form
                     action={(fd) => handleUpdate(c.id, fd)}
                     className="p-4 flex items-end gap-2 flex-wrap text-sm"
@@ -150,28 +154,32 @@ export default function ClassesClient({
                     </div>
                   </button>
                   <div className="flex items-center gap-3 shrink-0">
-                    <button
-                      onClick={() => setEditingId(c.id)}
-                      className="text-slate-400 hover:text-slate-700"
-                      aria-label={t("edit")}
-                      title={t("edit")}
-                    >
-                      <Pencil size={15} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(c.id)}
-                      className="text-slate-400 hover:text-red-600"
-                      aria-label={t("deleteClass")}
-                      title={t("deleteClass")}
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                    <button
-                      onClick={() => setClassActive(c.id, !c.is_active)}
-                      className="text-xs text-slate-500 hover:text-slate-700 border border-slate-200 rounded-full px-2.5 py-1"
-                    >
-                      {c.is_active ? t("archive") : t("activate")}
-                    </button>
+                    {canEdit && (
+                      <>
+                        <button
+                          onClick={() => setEditingId(c.id)}
+                          className="text-slate-400 hover:text-slate-700"
+                          aria-label={t("edit")}
+                          title={t("edit")}
+                        >
+                          <Pencil size={15} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(c.id)}
+                          className="text-slate-400 hover:text-red-600"
+                          aria-label={t("deleteClass")}
+                          title={t("deleteClass")}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                        <button
+                          onClick={() => setClassActive(c.id, !c.is_active)}
+                          className="text-xs text-slate-500 hover:text-slate-700 border border-slate-200 rounded-full px-2.5 py-1"
+                        >
+                          {c.is_active ? t("archive") : t("activate")}
+                        </button>
+                      </>
+                    )}
                     <button onClick={() => setExpanded(isExpanded ? null : c.id)} className="text-slate-400">
                       {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </button>
@@ -188,6 +196,13 @@ export default function ClassesClient({
                       <div className="flex flex-col gap-1.5 max-h-64 overflow-y-auto">
                         {students.map((s) => {
                           const isMember = memberSet.has(`${c.id}:${s.id}`);
+                          if (!canEdit) {
+                            return isMember ? (
+                              <div key={s.id} className="text-sm text-slate-700">
+                                {s.name_ar}
+                              </div>
+                            ) : null;
+                          }
                           return (
                             <label key={s.id} className="flex items-center gap-2 text-sm text-slate-700">
                               <input

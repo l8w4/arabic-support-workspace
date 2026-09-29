@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Plus, Search, User, ArrowUpDown, ArrowRight, ArrowLeft, Layers, Users, UserX } from "lucide-react";
 import { useLang } from "@/lib/i18n/context";
+import { useCanEdit } from "@/lib/access/context";
 import type { Student } from "@/lib/types";
 
 type StudentCard = Student & { photoUrl: string | null; classIds: string[]; classNames: string[] };
@@ -37,6 +38,7 @@ export default function StudentsClient({
   initialSelected: string | null;
 }) {
   const { t, lang } = useLang();
+  const canEdit = useCanEdit();
   const BackIcon = lang === "ar" ? ArrowRight : ArrowLeft;
 
   const isValid = (key: string | null) =>
@@ -55,21 +57,22 @@ export default function StudentsClient({
   const unassigned = students.filter((s) => s.classIds.length === 0);
   const countLabel = (n: number) => `${n} ${t("studentsCount")}`;
 
-  const addButton = (
-    <Link
-      href="/students/new"
-      className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm px-3.5 py-2 rounded-lg"
-    >
-      <Plus size={16} /> {t("addStudent")}
-    </Link>
-  );
+  const addButtonFor = (href: string) =>
+    canEdit && (
+      <Link
+        href={href}
+        className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm px-3.5 py-2 rounded-lg"
+      >
+        <Plus size={16} /> {t("addStudent")}
+      </Link>
+    );
 
   if (selected === null) {
     return (
       <div>
         <div className="flex items-center justify-between mb-2 flex-wrap gap-3">
           <h1 className="text-xl font-semibold text-slate-900">{t("students")}</h1>
-          {addButton}
+          {addButtonFor("/students/new")}
         </div>
         <p className="text-sm text-slate-500 mb-5">{t("chooseClassToStart")}</p>
 
@@ -174,7 +177,9 @@ export default function StudentsClient({
               className="ps-9 pe-3 py-2 text-sm border border-slate-300 rounded-lg w-56 focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
           </div>
-          {addButton}
+          {addButtonFor(
+            selected === "all" ? "/students/new" : `/students/new?class=${selected}`
+          )}
         </div>
       </div>
 

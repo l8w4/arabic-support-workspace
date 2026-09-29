@@ -1,6 +1,6 @@
 export const STRINGS = {
   ar: {
-    appName: "مركز دعم للغة العربية",
+    appName: "مركز دعم اللغة العربية",
     appNameSub: "We Care Support Centre",
     username: "البريد الإلكتروني",
     password: "كلمة المرور",
@@ -195,10 +195,18 @@ export const STRINGS = {
     exportHint: "اتركهما فارغين لتنزيل كل الفترات",
     optionalNote: "ملاحظة (اختياري)",
     markingFor: "تسجيل الحضور لـ",
+    deletePlan: "حذف الخطة",
+    confirmDeletePlan: "هل تريد حذف هذه الخطة؟ سيتم حذف سجل المراجعات المرتبط بها، ولا يمكن التراجع.",
+    deleteStudent: "حذف الطالب",
+    confirmDeleteStudent: "هل تريد حذف هذا الطالب؟ سيتم حذف جميع خططه وواجباته ودرجاته وملفاته وسجلات حضوره، ولا يمكن التراجع.",
+    noClassOption: "بدون فصل",
+    changeClass: "تغيير الفصل",
+    addingStudentTo: "إضافة طالب إلى",
+    viewerNoAccess: "حسابك للعرض فقط ولا يمكنه إضافة أو تعديل أو حذف أي بيانات.",
   },
   en: {
     appName: "Support Centre Workspace",
-    appNameSub: "مركز دعم للغة العربية",
+    appNameSub: "مركز دعم اللغة العربية",
     username: "Email",
     password: "Password",
     loginBtn: "Log in",
@@ -392,6 +400,14 @@ export const STRINGS = {
     exportHint: "Leave empty to download all dates",
     optionalNote: "Note (optional)",
     markingFor: "Marking attendance for",
+    deletePlan: "Delete plan",
+    confirmDeletePlan: "Delete this plan? Its review history will be deleted too, and this can't be undone.",
+    deleteStudent: "Delete student",
+    confirmDeleteStudent: "Delete this student? All their plans, homework, marks, files and attendance records will be deleted too, and this can't be undone.",
+    noClassOption: "No class",
+    changeClass: "Change class",
+    addingStudentTo: "Adding student to",
+    viewerNoAccess: "Your account is view-only and can't add, edit or delete anything.",
   },
 } as const;
 

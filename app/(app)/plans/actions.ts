@@ -95,3 +95,10 @@ export async function addPlanReview(planId: string, formData: FormData) {
   revalidatePath(`/plans/${planId}`);
   revalidatePath("/plans");
 }
+
+export async function deletePlan(id: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("plans").delete().eq("id", id).select("id");
+  revalidatePath("/plans");
+  return { success: !error && (data?.length ?? 0) > 0, error: error?.message };
+}

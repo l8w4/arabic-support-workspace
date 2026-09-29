@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Plus, AlertTriangle } from "lucide-react";
 import { useLang } from "@/lib/i18n/context";
+import { useCanEdit } from "@/lib/access/context";
 import ProgressBadge from "@/components/ProgressBadge";
 import type { Plan, PlanStatus, Student } from "@/lib/types";
 
@@ -22,6 +23,7 @@ export default function PlansClient({
   students: Pick<Student, "id" | "name_ar">[];
 }) {
   const { t, lang } = useLang();
+  const canEdit = useCanEdit();
   const [studentFilter, setStudentFilter] = useState("all");
   const [termFilter, setTermFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -81,12 +83,14 @@ export default function PlansClient({
               </option>
             ))}
           </select>
-          <Link
-            href="/plans/new"
-            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm px-3.5 py-2 rounded-lg"
-          >
-            <Plus size={16} /> {t("addPlan")}
-          </Link>
+          {canEdit && (
+            <Link
+              href="/plans/new"
+              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm px-3.5 py-2 rounded-lg"
+            >
+              <Plus size={16} /> {t("addPlan")}
+            </Link>
+          )}
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, X, FileText, Trash2, Loader2, Pencil } from "lucide-react";
 import { useLang } from "@/lib/i18n/context";
+import { useCanEdit } from "@/lib/access/context";
 import HomeworkEditForm from "@/components/HomeworkEditForm";
 import { createClient } from "@/lib/supabase/client";
 import type { HomeworkEntry } from "@/lib/types";
@@ -19,6 +20,7 @@ export default function HomeworkTab({
 }) {
   const { t, lang } = useLang();
   const router = useRouter();
+  const canEdit = useCanEdit();
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -97,14 +99,16 @@ export default function HomeworkTab({
 
   return (
     <div className="max-w-2xl">
-      <button
-        onClick={() => setShowForm((v) => !v)}
-        className="mb-4 flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm px-3.5 py-2 rounded-lg"
-      >
-        <Plus size={16} /> {t("addHomework")}
-      </button>
+      {canEdit && (
+        <button
+          onClick={() => setShowForm((v) => !v)}
+          className="mb-4 flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm px-3.5 py-2 rounded-lg"
+        >
+          <Plus size={16} /> {t("addHomework")}
+        </button>
+      )}
 
-      {showForm && (
+      {canEdit && showForm && (
         <form
           action={handleAdd}
           className="bg-white border border-slate-200 rounded-xl p-5 mb-5 flex flex-col gap-4 relative"
@@ -198,22 +202,26 @@ export default function HomeworkTab({
                   <span className={`${HOMEWORK_STATUS_CLASS[h.status]} text-xs px-2.5 py-0.5 rounded-full font-medium`}>
                     {t(`hw_${h.status}` as any)}
                   </span>
-                  <button
-                    onClick={() => setEditingId(h.id)}
-                    className="text-slate-300 hover:text-slate-700"
-                    aria-label={t("edit")}
-                    title={t("edit")}
-                  >
-                    <Pencil size={14} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(h.id)}
-                    className="text-slate-300 hover:text-red-600"
-                    aria-label={t("deleteEntry")}
-                    title={t("deleteEntry")}
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  {canEdit && (
+                    <>
+                      <button
+                        onClick={() => setEditingId(h.id)}
+                        className="text-slate-300 hover:text-slate-700"
+                        aria-label={t("edit")}
+                        title={t("edit")}
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(h.id)}
+                        className="text-slate-300 hover:text-red-600"
+                        aria-label={t("deleteEntry")}
+                        title={t("deleteEntry")}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
               {h.note && <p className="text-sm text-slate-600 mt-1.5 whitespace-pre-line">{h.note}</p>}

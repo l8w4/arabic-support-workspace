@@ -49,13 +49,23 @@ gitignored).
   "Add student". The selection lives in the URL (`?class=<id>|unassigned|all`,
   via `history.replaceState`); "back to classes" returns to the picker. A
   student counts as unassigned when they are in no *active* class (archived
-  classes don't count). New students start unassigned — enrol them from the
-  Classes roster. Cards show photo, Arabic + English name and (in all/unassigned
-  views) class tags. Profile has tabs: info / homework / marks / files. Photo
-  upload from the profile (`students.photo_path`, private bucket, signed URLs).
-  **Health status** (`الحالة الصحية`) is optional free text shown only on the
-  profile info tab and the report — never on list cards, and the list query
-  selects explicit columns so it is not sent to the list page.
+  classes don't count). Cards show photo, Arabic + English name and (in
+  all/unassigned views) class tags. Profile has tabs: info / homework / marks /
+  files, plus delete (with confirm — see below). Photo upload from the profile
+  (`students.photo_path`, private bucket, signed URLs). **Health status**
+  (`الحالة الصحية`) is optional free text shown only on the profile info tab
+  and the report — never on list cards, and the list query selects explicit
+  columns so it is not sent to the list page.
+  **Creating a student is class-first too**: `/students/new` opens on the same
+  kind of class-picker (or "no class") before showing the form; "Add student"
+  from inside a specific class or the unassigned view deep-links past the
+  picker (`?class=<id>|unassigned`) and locks that choice in, with a "change
+  class" link back. `createStudent` enrols into `class_students` when a real
+  class was chosen. `deleteStudent` clears `attendance` and `documents` rows
+  for that student first (plain FKs, no cascade — documents' storage files are
+  removed too), then deletes the student row, which cascades `plans` (+
+  `plan_reviews`), `homework_entries`, `grade_entries` and `class_students`
+  automatically.
 - **Homework** (`homework_entries`): four-point qualitative status
   (`completed` مكتمل / `partial` جزئي / `needs_support` يحتاج مساعدة /
   `not_done` لم يُنجز) — deliberately not a numeric grade — plus note and an
@@ -88,19 +98,25 @@ gitignored).
   `@media print` CSS (sidebar hidden via `print:hidden`); "Print → Save as PDF"
   from the browser handles Arabic. Opened from "طباعة التقرير" on the profile.
 - **Files:** upload to private storage, tag by type, filter, signed download
-  links (1 hour).
+  links (1 hour), inline edit (title/type/linked student/notes) and delete
+  (removes the storage object too — `deleteDocument` in `files/actions.ts`). A
+  document linked to a homework entry keeps that entry: `document_id` is
+  `ON DELETE SET NULL`.
 - **Classes** `/classes`: add, edit name/academic year inline, delete (with
   confirm), archive/activate, and roster management (tick students in a class;
-  removing sets `left_on`, re-adding resets it). Deleting a class also deletes
-  its attendance and prep rows and unlinks its documents (those FKs have no
+  removing sets `left_on`, re-adding resets it; read-only for viewers shows
+  just the enrolled names, no checkboxes). Deleting a class also deletes its
+  attendance and prep rows and unlinks its documents (those FKs have no
   cascade); the roster cascades.
 - **Intervention plans** `/plans` (+ `/new`, `/[id]`): list with student/term/
   status filters, overdue-review flag, four-point progress scale
   (`great`/`noticeable`/`slight`/`none`), editable plan info, plan document
   upload, review history (each review appends a `plan_reviews` row and updates
-  the plan's current rating / next review date).
-- **Weekly prep** `/prep`: per class and week range, unit + lesson title,
-  file upload, filter by class, search by unit/lesson.
+  the plan's current rating / next review date), delete (confirm — cascades
+  `plan_reviews`).
+- **Weekly prep** `/prep`: per class and week range, unit + lesson title, file
+  upload, filter by class, search by unit/lesson, inline edit (text fields
+  only, not the file) and delete (removes the storage object too).
 - **Attendance** `/attendance`: pick class + date, everyone defaults to
   present, five statuses (`present` حاضر, `absent` غائب, `excused` مستأذن,
   `truant` هارب, `late` متأخر), one Save for the whole class/date (upsert on
@@ -111,6 +127,23 @@ gitignored).
   never generated, UTF-8 BOM so Arabic opens correctly in Excel.
 - **Branding:** We Care Support Centre logo (`public/logo.jpg`, also
   `app/icon.jpg` as the tab icon) on the login page and sidebar.
+- **View-only enforcement in the UI** for `viewer` accounts (e.g. a مشرف/
+  coordinator): `lib/access/context.tsx` (`AccessProvider`/`useCanEdit`) is
+  set once in `Shell` from `canEdit(profile.role)` (`lib/access/role.ts`) and
+  read by every list/detail client component to hide Add/Edit/Delete/Save
+  controls — students, classes (incl. roster checkboxes), plans, prep, files,
+  homework and marks (both the sidebar class-recording pages and the profile
+  tabs). Attendance shows the day read-only (static status badges, no inputs,
+  no Save) instead of hiding the whole page, so a viewer can still see who was
+  marked what. The sidebar shows a small "view-only" note under a viewer's
+  name. **This is UX only — Postgres RLS (`can_edit()`) is the actual security
+  boundary** and blocks every write regardless of what the UI shows; a viewer
+  hitting a write URL directly still gets refused by the database. `lib/access
+  /role.ts` (not `lib/auth.ts`) holds `Profile`/`canEdit`, because `lib/auth.ts`
+  imports the server-only Supabase client (`next/headers`) via
+  `requireProfile()` — importing that from a `"use client"` file (`Shell.tsx`)
+  breaks the client bundle ("You're importing a component that needs
+  next/headers").
 - **Home dashboard**, Arabic/English toggle throughout (`lib/i18n`).
 
 ## What's stubbed
@@ -174,12 +207,27 @@ migration before deploying code that needs it.**
 - All strings go in `lib/i18n/strings.ts` (`ar` and `en`), read via `useLang()`.
 - RLS pattern: any signed-in user can `select`; only `admin`/`teacher` write
   (`can_edit()`), except `comments` (any signed-in role can insert).
+- **Any new write control (Add/Edit/Delete/Save) must be wrapped in
+  `useCanEdit()` from `lib/access/context`** so viewer accounts don't see
+  controls that RLS will refuse. Import `canEdit`/`Profile` from
+  `lib/access/role.ts` in client components, never from `lib/auth.ts` (server-
+  only, breaks the client bundle).
 - Workflow: verify with `npx tsc --noEmit` and `npm run build`, commit, push
   to `main` (Vercel deploys), then tell the user what to test on the live
   site. Update this file in the same push.
 
 ## Change log
 
+- 2026-09-29: Arabic app name fixed to "مركز دعم اللغة العربية" (was missing
+  the ال). Full CRUD audit — added delete for students (+cascade-safe cleanup)
+  and plans, and edit+delete for prep and files (`prep/actions.ts` and
+  `files/actions.ts` are new). Students creation is now class-first
+  (`/students/new` picker, mirroring the list page); `createStudent` enrols
+  the new student directly. Added `lib/access` (`AccessProvider`/`useCanEdit`/
+  `canEdit`) and hid every write control from `viewer` accounts across the
+  app, so a مشرف account is genuinely read-only in the UI, not just at the RLS
+  layer. `Profile`/`canEdit` moved out of `lib/auth.ts` into the new
+  client-safe `lib/access/role.ts` to fix a broken client build.
 - 2026-09-20 (late night): homework and marks entries can be edited (sidebar
   tables and profile tabs); deletes now verify a row was really removed
   instead of trusting "no error".

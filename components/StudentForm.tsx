@@ -6,9 +6,11 @@ import type { Student } from "@/lib/types";
 export default function StudentForm({
   action,
   defaultValues,
+  children,
 }: {
   action: (formData: FormData) => void;
   defaultValues?: Partial<Student>;
+  children?: React.ReactNode;
 }) {
   const { t } = useLang();
 
@@ -93,6 +95,7 @@ export default function StudentForm({
           className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
         />
       </div>
+      {children}
       <button type="submit" className="self-start bg-blue-600 hover:bg-blue-700 text-white text-sm px-5 py-2 rounded-lg">
         {t("save")}
       </button>
