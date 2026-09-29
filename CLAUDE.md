@@ -37,6 +37,19 @@ fixes it.
 fails with EACCES. Use `npm install --cache ./.npm-cache` (`.npm-cache` is
 gitignored).
 
+**Performance / regions:** the target audience is in Qatar. Vercel's function
+region is pinned to `bom1` (Mumbai — the closest *valid* region; there is no
+Middle East option, and `dxb1` does **not exist**, don't reuse it) via
+`vercel.json`. Check `vercel.com/docs/regions` for the real list before ever
+setting a region again. **Supabase's project region is Tokyo (`ap-northeast-1`)
+— ~7,500 km from Qatar and still the single biggest latency source**, since
+every DB/auth/storage call round-trips there regardless of Vercel's region.
+Fixing that means migrating to a new Supabase project in a closer region
+(Supabase can't change an existing project's region); flagged, not done —
+revisit if the app is still slow after the fixes below, ideally before the
+dataset grows past today's mostly-demo size. Hobby function regions: single
+region only (`vercel.json` → `"regions": [...]`); Pro gets up to 5.
+
 ## What's built
 
 - **Auth:** Supabase Auth, roles `admin` / `teacher` / `viewer` enforced by
@@ -204,6 +217,19 @@ migration before deploying code that needs it.**
   deletes (no soft-delete/trash).
 - Client state derived from props must be re-synced with `useEffect` (client
   navigation does not remount) — see `AttendanceClient.tsx`.
+- `app/(app)/loading.tsx` is the Suspense fallback for every sidebar page (one
+  shared file — Next.js applies it to the whole `(app)` subtree). Keep it if
+  you restructure routing: without it, clicking a nav link shows nothing until
+  the entire target page's data has loaded, which reads as the app being
+  frozen, especially with Supabase in a distant region.
+- `requireProfile()` (`lib/auth.ts`) uses `getSession()`, not `getUser()` —
+  middleware already calls `getUser()` (the one that actually revalidates
+  against Supabase's Auth server) for every request and redirects on failure,
+  so re-validating again in the layout is a pure redundant round-trip. Don't
+  "fix" this back to `getUser()` without re-adding that reasoning; do keep
+  using `getUser()` (never `getSession()`) anywhere *else* a request must
+  independently prove who the caller is (Server Actions, Route Handlers) —
+  those aren't covered by this same-request reasoning.
 - All strings go in `lib/i18n/strings.ts` (`ar` and `en`), read via `useLang()`.
 - RLS pattern: any signed-in user can `select`; only `admin`/`teacher` write
   (`can_edit()`), except `comments` (any signed-in role can insert).
@@ -218,6 +244,13 @@ migration before deploying code that needs it.**
 
 ## Change log
 
+- 2026-09-29 (later): Performance — pinned Vercel to `bom1` (first attempt
+  used `dxb1`, which doesn't exist and silently kept the deploy on the old
+  default `iad1`; caught it by checking `vercel.com/docs/regions`). Added
+  `app/(app)/loading.tsx` for instant navigation feedback, and removed a
+  redundant `getUser()` call in `requireProfile()` (middleware already does
+  one per request). Confirmed Supabase's project region is Tokyo — flagged as
+  the remaining big lever, migration deferred by the user for now.
 - 2026-09-29: Arabic app name fixed to "مركز دعم اللغة العربية" (was missing
   the ال). Full CRUD audit — added delete for students (+cascade-safe cleanup)
   and plans, and edit+delete for prep and files (`prep/actions.ts` and
